@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>D3 Test</title>
+        <script type="text/javascript" src="d3/d3.js"></script>
+        <script src="https://d3js.org/topojson.v2.min.js"></script>
+    </head>
+    <style>
+
+    </style>
+
+    <body>
+
+
+    </body>
+        <script type="text/javascript">
+        d3.csv("heatmapdata_07_11.csv", function(data) {
+            loanData = data;
+            totalLoansByState(loanData);
+          });
+          function totalLoansByState(data){
+            var prevState = data[0].state;
+            var stateTotal = 0;
+            for(i=0;i<data.length;i++){
+              statedata = data[i];
+              var state = statedata.state;
+              var loan = parseInt(statedata.amount);
+              if(state==prevState){
+                stateTotal = stateTotal + loan;
+              }
+              else{
+                console.log(prevState, stateTotal);
+                stateTotal = 0;
+
+              }
+              prevState = state;
+            }
+          };
+        </script>
+    </body>
+</html>
