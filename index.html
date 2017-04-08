@@ -7,6 +7,10 @@
   <script src="d3/d3.js"></script>
     </head>
     <style>
+    .legend rect {
+  fill:white;
+  stroke:black;
+  opacity:0.8;}
     .line {
       fill: none;
       stroke: steelblue;
@@ -56,7 +60,17 @@
                       total: d3.sum(g, function(g) { return g.loan_amnt; }),
                       avgrate: d3.mean(g, function(g) { return g.int_rate; })
             }}).entries(data);
-         console.log(avgRateByMonth);
+            console.log(avgRateByMonth);
+        avgRateByMonth_Grade = d3.nest()
+                      .key(function(d) { return d.month;})
+                      .key(function(d) { return d.grade;})
+                      //.key(function(d) {return d.grade;})
+                       .rollup(function(g) { return{
+                          //count: g.length,
+                          total: d3.sum(g, function(g) { return g.loan_amnt; }),
+                          avgrate: d3.mean(g, function(g) { return g.int_rate; })
+                }}).entries(data);
+         console.log(avgRateByMonth_Grade);
        });
      }
 
@@ -82,6 +96,22 @@
            if(avg>max){ max = avg; }
          }
          console.log(max);
+
+       //var xAxis = d3.svg.axis().scale(x)
+        //    .orient("bottom").ticks(12);
+
+       //var yAxis = d3.svg.axis().scale(y)
+            //.orient("left").ticks(5);
+
+            // Define the line
+            console.log(d.key);
+
+       var lineA = transform(this.avgRateByMonth_Grade, "A");
+       var lineB = transform(this.avgRateByMonth_Grade, "B");
+       var lineC = transform(this.avgRateByMonth_Grade, "C");
+       var lineD = transform(this.avgRateByMonth_Grade, "D");
+       var lineE = transform(this.avgRateByMonth_Grade, "E");
+
        var xScale = d3.scaleBand()
                        .domain(myData.map( function(d)
                                  { //return parseInt(d.key)
@@ -91,7 +121,7 @@
                        .paddingInner(0.05);
 
        var yScale = d3.scaleLinear()
-                             .domain([ 0, d3.max(myData, function(d) { return d.value.avgrate; })])
+                             .domain([ 0, d3.max(lineE, function(lineE) { return lineE.value; })])
                              //.domain([d3.max(myData, function(d) { return d.value; }),0])
                              .range([height,0]);
        // Define the axes
@@ -102,18 +132,29 @@
        var yAxis = d3.axisLeft()
         .scale(yScale);
 
-       //var xAxis = d3.svg.axis().scale(x)
-        //    .orient("bottom").ticks(12);
 
-       //var yAxis = d3.svg.axis().scale(y)
-            //.orient("left").ticks(5);
+      //Lines
+      var valueline = d3.line()
+             .x(function(d) { return xScale(d.key); })
+             .y(function(d) { return yScale(d.value.avgrate); });
 
-            // Define the line
-       var valueline = d3.line()
-            .x(function(d) { return xScale(d.key); })
-            .y(function(d) { return yScale(d.value.avgrate); });
+       var valuelineA = d3.line()
+            .x(function(lineA) { return xScale(lineA.key); })
+            .y(function(lineA) { return yScale(lineA.value); });
+      var valuelineB = d3.line()
+            .x(function(lineB) { return xScale(lineB.key); })
+            .y(function(lineB) { return yScale(lineB.value); });
+      var valuelineC = d3.line()
+            .x(function(lineC) { return xScale(lineC.key); })
+            .y(function(lineC) { return yScale(lineC.value); });
+      var valuelineD = d3.line()
+            .x(function(lineD) { return xScale(lineD.key); })
+            .y(function(lineD) { return yScale(lineD.value); });
+      var valuelineE = d3.line()
+              .x(function(lineE) { return xScale(lineE.key); })
+              .y(function(lineE) { return yScale(lineE.value); });
 
-            // Adds the svg canvas
+      // Adds the svg canvas
        var svg = d3.select("body")
             .append("svg")
             .attr("width", width + margin.left + margin.right)
@@ -128,9 +169,35 @@
     // Add the valueline path.
     svg.append("path")
         .attr("class", "line")
-        .attr("d", valueline(this.avgRateByMonth));
-
-    // Add the X Axis
+        .attr("d", valueline(this.avgRateByMonth))
+        .style("stroke", "orange")
+        .attr("data-legend","all");
+    svg.append("path")
+            .attr("class", "line")
+            .attr("d", valuelineA(lineA))
+            .style("stroke", "yellow")
+              .attr("data-legend","A");
+    svg.append("path")
+            .attr("class", "line")
+            .attr("d", valuelineB(lineB))
+            .style("stroke", "black")
+            .attr("data-legend","B");
+    svg.append("path")
+             .attr("class", "line")
+             .attr("d", valuelineC(lineC))
+             .style("stroke", "red")
+             .attr("data-legend","C");
+     svg.append("path")
+              .attr("class", "line")
+              .attr("d", valuelineD(lineD))
+              .style("stroke", "green")
+              .attr("data-legend","D");
+    svg.append("path")
+              .attr("class", "line")
+              .attr("d", valuelineE(lineE))
+              .style("stroke", "blue")
+              .attr("data-legend","E");
+    // Add the X Axi
     svg.append("g")
         .attr("class", "x axis")
         .attr("transform", "translate(0," + height + ")")
@@ -140,8 +207,39 @@
     svg.append("g")
         .attr("class", "y axis")
         .call(yAxis);
-
+        legend = svg.append("g")
+           .attr("class","legend")
+           .attr("transform","translate(50,30)")
+           .style("font-size","12px")
+           .call(d3.legend)
      }
+     function transform(d,g){
+       console.log(g);
+       //console.log(d);
+       var arr = [];
+       for(i=0;i<d.length;i++){
+         data = d[i];
+         var month = data.key;
+         var grade = g;
+         var valuesArr = d[i].values;
+         for(j=0;j<valuesArr.length;j++){
+           var tmpgrade = valuesArr[j].key;
+           if(tmpgrade == grade){
+             console.log("found");
+             var json = {
+               "key" : month,
+               "value": valuesArr[j].value.avgrate,
+             }
+             break;
+           }
+         }
+         arr.push(json);
+       }
+       console.log(arr);
+       return arr;
+     }
+
+
 
   /*   function fetchData(){
        var data = this.byState;
