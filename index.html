@@ -3,40 +3,173 @@
     <head>
         <meta charset="utf-8">
         <title>D3 Test</title>
-        <script type="text/javascript" src="d3/d3.js"></script>
         <script src="https://d3js.org/topojson.v2.min.js"></script>
+  <script src="d3/d3.js"></script>
     </head>
     <style>
-
+    .line {
+      fill: none;
+      stroke: steelblue;
+      stroke-width: 2px;
+    }
     </style>
 
     <body>
+      State: <input type="text" id="state"><br>
+      Time of Year: <input type="text" id="date"><br>
+      <button type="button" onclick="fetchData()">Find</button>
 
+
+      <button type="button" onclick="showGraph()"> Graph </button>
+
+      <div id="info"> </div>
 
     </body>
         <script type="text/javascript">
-        d3.csv("heatmapdata_07_11.csv", function(data) {
-            loanData = data;
-            totalLoansByState(loanData);
-          });
-          function totalLoansByState(data){
-            var prevState = data[0].state;
-            var stateTotal = 0;
-            for(i=0;i<data.length;i++){
-              statedata = data[i];
-              var state = statedata.state;
-              var loan = parseInt(statedata.amount);
-              if(state==prevState){
-                stateTotal = stateTotal + loan;
-              }
-              else{
-                console.log(prevState, stateTotal);
-                stateTotal = 0;
+         var myPaths;
 
-              }
-              prevState = state;
-            }
-          };
+         var byState
+         var byMonthAndYear;
+        // set the dimensions and margins of the graph
+        var margin = {top: 20, right: 20, bottom: 30, left: 50},
+        width = 960 - margin.left - margin.right,
+        height = 500 - margin.top - margin.bottom;
+
+        var avgRateByMonth;
+
+      function loadData()
+      {
+       console.log("Attempting to load json");
+       d3.json("us-10m.json", function(json)
+       {
+         myPaths = json;
+
+       });
+
+       d3.csv("loan_data.csv", function(data) {
+
+        avgRateByMonth = d3.nest()
+                  .key(function(d) { return d.month;})
+                  //.key(function(d) {return d.grade;})
+                   .rollup(function(g) { return{
+                      //count: g.length,
+                      total: d3.sum(g, function(g) { return g.loan_amnt; }),
+                      avgrate: d3.mean(g, function(g) { return g.int_rate; })
+            }}).entries(data);
+         console.log(avgRateByMonth);
+       });
+     }
+
+     function showGraph(){
+       createGraph(this.avgRateByMonth);
+     }
+     function createGraph(d){
+       // Set the dimensions of the canvas / graph
+       var margin = {top: 30, right: 20, bottom: 30, left: 50};
+       var width = 600 - margin.left - margin.right;
+       var height = 270 - margin.top - margin.bottom;
+       myData = d;
+       // Parse the date / time
+       //var parseDate = d3.time.format("%d-%b-%y").parse;
+
+       // Set the ranges
+       //var x = d3.saleBand().range([0, width]);
+       //var y = d3.scaleLinear().range([height, 0]);
+       var max = 0;
+       for(i=0;i<this.avgRateByMonth.length;i++){
+           var tmp = this.avgRateByMonth[i];
+           var avg = tmp.value.avgrate;
+           if(avg>max){ max = avg; }
+         }
+         console.log(max);
+       var xScale = d3.scaleBand()
+                       .domain(myData.map( function(d)
+                                 { //return parseInt(d.key)
+                                   return d.key
+                                 }))
+                       .range([0, width])
+                       .paddingInner(0.05);
+
+       var yScale = d3.scaleLinear()
+                             .domain([ 0, d3.max(myData, function(d) { return d.value.avgrate; })])
+                             //.domain([d3.max(myData, function(d) { return d.value; }),0])
+                             .range([height,0]);
+       // Define the axes
+
+       var xAxis = d3.axisBottom()
+       .scale(xScale);
+
+       var yAxis = d3.axisLeft()
+        .scale(yScale);
+
+       //var xAxis = d3.svg.axis().scale(x)
+        //    .orient("bottom").ticks(12);
+
+       //var yAxis = d3.svg.axis().scale(y)
+            //.orient("left").ticks(5);
+
+            // Define the line
+       var valueline = d3.line()
+            .x(function(d) { return xScale(d.key); })
+            .y(function(d) { return yScale(d.value.avgrate); });
+
+            // Adds the svg canvas
+       var svg = d3.select("body")
+            .append("svg")
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", height + margin.top + margin.bottom)
+            .append("g")
+            .attr("transform",
+              "translate(" + margin.left + "," + margin.top + ")");
+            // Scale the range of the data
+    //xScale.domain(d3.extent(this.avgRateByMonth, function(d) { return d.key; }));
+  //  yScale.domain([0, max]);
+
+    // Add the valueline path.
+    svg.append("path")
+        .attr("class", "line")
+        .attr("d", valueline(this.avgRateByMonth));
+
+    // Add the X Axis
+    svg.append("g")
+        .attr("class", "x axis")
+        .attr("transform", "translate(0," + height + ")")
+        .call(xAxis);
+
+    // Add the Y Axis
+    svg.append("g")
+        .attr("class", "y axis")
+        .call(yAxis);
+
+     }
+
+  /*   function fetchData(){
+       var data = this.byState;
+       var userstate = document.getElementById('state').value;
+       var usermonth = document.getElementById('date').value;
+
+       for(i=0;i<data.length;i++){
+         var tmp = data[i];
+         var state = tmp.key;
+         if(userstate==state){
+           console.log(userstate,state);
+           for(j=0;j<data[i].values.length;j++){
+             var date = data[i].values[j].key;
+             var rate = data[i].values[j].value.avgrate;
+             if(date==userdate){
+               console.log(rate)
+               break;
+             }
+           }
+         }
+       }
+     }*/
+
+
+
+
+
+    window.onload = loadData;
+
         </script>
-    </body>
 </html>
