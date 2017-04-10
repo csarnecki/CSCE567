@@ -5,6 +5,7 @@
         <title>D3 Test</title>
         <script src="https://d3js.org/topojson.v2.min.js"></script>
   <script src="d3/d3.js"></script>
+  <script src="d3pie-0.2.1/d3pie/d3pie.min.js"></script>
     </head>
     <style>
     .legend rect {
@@ -27,31 +28,130 @@
       <button type="button" onclick="showGraph()"> Graph </button>
 
       <div id="info"> </div>
-
+      <select id="month" onchange="createMap()">
+        <option value="Jan">January</option>
+        <option value="Feb">February</option>
+        <option value="Mar">March</option>
+        <option value="Apr">April</option>
+        <option value="May">May</option>
+        <option value="Jun">June</option>
+        <option value="Jul">July</option>
+        <option value="Aug">August</option>
+        <option value="Sep">September</option>
+        <option value="Oct">October</option>
+        <option value="Nov">November</option>
+        <option value="Dec">December</option>
+      </select>
+    <div id="area1"> </div>
+    <div id="pieChart"></div>
     </body>
         <script type="text/javascript">
-         var myPaths;
+        var myPaths;
 
-         var byState
-         var byMonthAndYear;
-        // set the dimensions and margins of the graph
-        var margin = {top: 20, right: 20, bottom: 30, left: 50},
-        width = 960 - margin.left - margin.right,
-        height = 500 - margin.top - margin.bottom;
+        var byState
+        var byMonthAndYear;
+       // set the dimensions and margins of the graph
+       var margin = {top: 20, right: 20, bottom: 30, left: 50},
+       width = 960 - margin.left - margin.right,
+       height = 500 - margin.top - margin.bottom;
+
+        function createMap(){
+          console.log(document.getElementById("month").value);
+
+        /*  d3.json("us-10m.json", function(json)
+          {
+            console.log("reading ur data ");
+            myPaths = json;
+            //createChoroplethMap(myPaths);
+          });*/
+          console.log(myPaths);
+          var svg = d3.select("#area1")
+                .append("svg")
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom)
+                .append("g")
+                .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+          var projection = d3.geoAlbersUsa()
+                .translate([width/2, height/2])
+                .scale([1000]);
+
+           var path = d3.geoPath()
+                .projection(projection);
+          var max = 0;
+          var min = 1;
+
+           //Find the max value of state total losses for the color scale domain
+           for(i=0;i<this.avgRateByState.length;i++){
+             console.log("in");
+                var rate = avgRateByState[i].value.avgrate;
+                console.log(rate);
+                if(rate>max) max = rate;
+                if(rate<min) min = rate;
+           }
+           console.log("MIN MAX", min,max);
+           //Colorscale is shades of blue
+           colorScale = d3.scaleLinear().domain([min,max]).range(["#FFFFFF", "#0000FF"]);
+
+           var states = svg.selectAll("path")
+               //.classed("containerMap", true)
+               .data(topojson.feature(myPaths, myPaths.objects.states).features)
+               .enter()
+               .append("path")
+               .attr("d", path)
+               .style("stroke", "#D3D3D3")
+               .style("stroke-width", "1")
+               .attr("fill",  function(d) {
+                  var abv = stateIDtoABV(d.id);
+                  var rate = getRateByState(abv);
+                  return colorScale(rate);
+                }
+               )
+               .on("mouseover", function(d) {
+                 var abv = stateIDtoABV(d.id);
+                 var rate = getRateByState(abv);
+                 console.log(abv,rate);
+               })
+               .on("mouseout", function(d) {
+               });
+        }
+        /*document.getElementById("month").onchange = function() {
+            console.log("yay");
+            console.log(this.val());
+          //  return false
+        };*/
+        function getRateByState(abv){
+
+          for(i=0;i<this.avgRateByState.length;i++){
+            var curr = avgRateByState[i];
+          //  console.log(curr);
+            if(curr.key == abv){
+              var value = curr.value.avgrate;
+              break;
+            }
+          }
+
+          return value;
+        }
 
         var avgRateByMonth;
-
+        var avgRateByState;
       function loadData()
       {
-       console.log("Attempting to load json");
-       d3.json("us-10m.json", function(json)
-       {
-         myPaths = json;
-
-       });
-
+      d3.json("us-10m.json", function(json)
+        {
+            console.log("reading ur data ");
+            myPaths = json;
+            console.log(myPaths);
+        });
        d3.csv("loan_data.csv", function(data) {
-
+        avgRateByState = d3.nest()
+                  .key(function(d) { return d.addr_state;})
+                  //.key(function(d) {return d.grade;})
+                   .rollup(function(g) { return{
+                      //count: g.length,
+                      total: d3.sum(g, function(g) { return g.loan_amnt; }),
+                      avgrate: d3.mean(g, function(g) { return g.int_rate; })
+            }}).entries(data);
         avgRateByMonth = d3.nest()
                   .key(function(d) { return d.month;})
                   //.key(function(d) {return d.grade;})
@@ -70,12 +170,101 @@
                           total: d3.sum(g, function(g) { return g.loan_amnt; }),
                           avgrate: d3.mean(g, function(g) { return g.int_rate; })
                 }}).entries(data);
-         console.log(avgRateByMonth_Grade);
+        categories = d3.nest()
+                       .key(function(d) { return d.purpose;})
+                       //.key(function(d) {return d.grade;})
+                        .rollup(function(g) { return{
+                           count: g.length,
+                           total: d3.sum(g, function(g) { return g.loan_amnt; }),
+                           avgrate: d3.mean(g, function(g) { return g.int_rate; }),
+                 }}).entries(data);
+         console.log(categories);
+         this.createPie(categories);
        });
      }
 
      function showGraph(){
        createGraph(this.avgRateByMonth);
+     }
+     function createPie(data){
+       console.log("pie time", data);
+       //Need to create an array of objects for each "label", "value","color"
+       var arr = [];
+       for(i=0;i<data.length;i++){
+         var curr = data[i];
+         var json = {
+           "label": data[i].key,
+           "value": data[i].value.count
+         }
+         arr.push(json);
+       }
+       console.log(arr);
+       var pie = new d3pie("pieChart", {
+	  "header": {
+		"title": {
+			"text": "Reasons for Lending Club Loans",
+			"fontSize": 22,
+			"font": "verdana"
+		},
+		/*"subtitle": {
+			"text": "Comments my wife has made when I tell her I'm working on this script instead of doing something \"fun\".",
+			"color": "#999999",
+			"fontSize": 10,
+			"font": "verdana"
+		},
+		"titleSubtitlePadding": 12*/
+	},
+	/*"footer": {
+		"text": "Source: me, my room, the last couple of months.",
+		"color": "#999999",
+		"fontSize": 11,
+		"font": "open sans",
+		"location": "bottom-center"
+	},*/
+	"size": {
+		"canvasHeight": 400,
+		"canvasWidth": 590,
+		"pieOuterRadius": "88%"
+	},
+	"data": {
+		"content": arr,
+	},
+	"labels": {
+		"outer": {
+			"pieDistance": 32
+		},
+		"inner": {
+			"format": "value"
+		},
+		"mainLabel": {
+			"font": "verdana"
+		},
+		"percentage": {
+			"color": "#e1e1e1",
+			"font": "verdana",
+			"decimalPlaces": 0
+		},
+		"value": {
+			"color": "#e1e1e1",
+			"font": "verdana"
+		},
+		"lines": {
+			"enabled": true,
+			"color": "#cccccc"
+		},
+		"truncation": {
+			"enabled": true
+		}
+	},
+	"effects": {
+		"pullOutSegmentOnClick": {
+			"effect": "linear",
+			"speed": 400,
+			"size": 8
+		}
+	}
+});
+
      }
      function createGraph(d){
        // Set the dimensions of the canvas / graph
@@ -96,15 +285,6 @@
            if(avg>max){ max = avg; }
          }
          console.log(max);
-
-       //var xAxis = d3.svg.axis().scale(x)
-        //    .orient("bottom").ticks(12);
-
-       //var yAxis = d3.svg.axis().scale(y)
-            //.orient("left").ticks(5);
-
-            // Define the line
-            console.log(d.key);
 
        var lineA = transform(this.avgRateByMonth_Grade, "A");
        var lineB = transform(this.avgRateByMonth_Grade, "B");
@@ -262,7 +442,59 @@
          }
        }
      }*/
+     function stateIDtoABV(id){
+       if(id == 2) return "AK";
+       if(id == 1) return "AL"
+       if(id == 5) return "AR";
+       if(id == 4) return "AZ";
+       if(id == 6) return "CA";
+       if(id == 8) return "CO";
+       if(id == 9) return "CT";
+       if(id == 10)return "DE";
+       if(id == 12)return "FL";
+       if(id == 13)return "GA";
+       if(id == 15)return "HI";
+       if(id == 19)return "IA";
+       if(id == 16)return "ID";
+       if(id == 17)return "IL";
+       if(id == 18)return "IN";
+       if(id == 20)return "KS";
+       if(id == 21)return "KY";
+       if(id == 22)return "LA";
+       if(id == 25)return "MA";
+       if(id == 24) return "MD";
+       if(id == 23) return "ME";
+       if(id == 26) return "MI";
+       if(id == 27) return "MN";
+       if(id == 29) return "MO";
+       if(id == 28) return "MS";
+       if(id == 30) return "MT";
+       if(id == 37) return "NC";
+       if(id == 38) return "ND";
+       if(id == 31) return "NE";
+       if(id == 33) return "NH";
+       if(id == 34) return "NJ";
+       if(id == 35) return "NM";
+       if(id == 32) return "NV";
+       if(id == 36) return "NY";
+       if(id == 39) return "OH";
+       if(id == 40) return "OK";
+       if(id == 41) return "OR";
+       if(id == 42) return "PA";
+       if(id == 44) return "RI";
+       if(id == 45) return "SC";
+       if(id == 46) return "SD";
+       if(id == 47) return "TN";
+       if(id == 48) return "TX";
+       if(id == 49) return "UT";
+       if(id == 51) return "VA";
+       if(id == 50) return "VT";
+       if(id == 53) return "WA";
+       if(id == 55) return "WI";
+       if(id == 54) return "WV";
+       if(id == 56) return "WY";
 
+     }
 
 
 
