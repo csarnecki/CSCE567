@@ -20,15 +20,10 @@
     </style>
 
     <body>
-      State: <input type="text" id="state"><br>
-      Time of Year: <input type="text" id="date"><br>
-      <button type="button" onclick="fetchData()">Find</button>
-
-
       <button type="button" onclick="showGraph()"> Graph </button>
 
       <div id="info"> </div>
-      <select id="month" onchange="createMap()">
+      <select id="month" onchange="wrapper()">
         <option value="Jan">January</option>
         <option value="Feb">February</option>
         <option value="Mar">March</option>
@@ -42,30 +37,80 @@
         <option value="Nov">November</option>
         <option value="Dec">December</option>
       </select>
-    <div id="area1"> </div>
-    <div id="pieChart"></div>
+      <select id="grade" onchange="wrapper()">
+        <option value="A">A</option>
+        <option value="B">B</option>
+        <option value="C">C</option>
+        <option value="D">D</option>
+        <option value="E">E</option>
+        <option value="F">F</option>
+        <option value="G">G</option>
+      </select>
+
+      <div id="map"> </div>
+      <div id="pieChart"></div>
+
     </body>
-        <script type="text/javascript">
-        var myPaths;
+    <script type="text/javascript">
+      var myPaths,loandata;
+      var margin = {top: 20, right: 20, bottom: 30, left: 50},
+      width = 960 - margin.left - margin.right,
+      height = 500 - margin.top - margin.bottom;
 
-        var byState
-        var byMonthAndYear;
-       // set the dimensions and margins of the graph
-       var margin = {top: 20, right: 20, bottom: 30, left: 50},
-       width = 960 - margin.left - margin.right,
-       height = 500 - margin.top - margin.bottom;
+      var stateAndMonth;
+      function loadData(){
 
-        function createMap(){
-          console.log(document.getElementById("month").value);
+            d3.json("us-10m.json", function(json)
+              {
+                  //console.log("reading ur data ");
+                  myPaths = json;
+                  //console.log(myPaths);
+              });
 
-        /*  d3.json("us-10m.json", function(json)
-          {
-            console.log("reading ur data ");
-            myPaths = json;
-            //createChoroplethMap(myPaths);
-          });*/
-          console.log(myPaths);
-          var svg = d3.select("#area1")
+             d3.csv("loan_data.csv", function(data) {
+               loandata = data;
+
+
+                stateAndMonth = d3.nest()
+                                  .key(function(d) { return d.addr_state;})
+                                  .key(function(d) { return d.month;})
+                                  .rollup(function(g) { return{
+                                      count: g.length,
+                                      total: d3.sum(g, function(g) { return g.loan_amnt; }),
+                                      avgrate: d3.mean(g, function(g) { return g.int_rate; }),
+                                  }}).entries(this.loandata);
+              });
+       }
+
+       function wrapper(){
+         var userMonth = document.getElementById("month").value;
+         var userGrade = document.getElementById("grade").value;
+         //Remove current map
+         var elem = document.getElementById("map");
+         elem.innerHTML = ' ';
+         createMap(userMonth,userGrade);
+       }
+        function createMap(userMonth,userGrade){
+          //var userMonth = document.getElementById("month").value;
+          //var userGrade = document.getElementById("grade").value;
+          //Grab the appropriate data
+           var max = 0;
+           var min = 1;
+           for(i=0;i<this.stateAndMonth.length;i++){
+              var currState = this.stateAndMonth[i].values;
+              for(j=0;j<currState.length;j++){
+                  var selection = currState[j];
+                  var currMonth = selection.key;
+                  if(currMonth == userMonth){
+                     var rate = selection.value.avgrate;
+                     if(rate>max) max = rate;
+                     if(rate<min) min = rate;
+                  }
+              }
+          }
+          //console.log("MIN MAX", min,max);
+
+          var svg = d3.select("#map")
                 .append("svg")
                 .attr("width", width + margin.left + margin.right)
                 .attr("height", height + margin.top + margin.bottom)
@@ -77,19 +122,7 @@
 
            var path = d3.geoPath()
                 .projection(projection);
-          var max = 0;
-          var min = 1;
 
-           //Find the max value of state total losses for the color scale domain
-           for(i=0;i<this.avgRateByState.length;i++){
-             console.log("in");
-                var rate = avgRateByState[i].value.avgrate;
-                console.log(rate);
-                if(rate>max) max = rate;
-                if(rate<min) min = rate;
-           }
-           console.log("MIN MAX", min,max);
-           //Colorscale is shades of blue
            colorScale = d3.scaleLinear().domain([min,max]).range(["#FFFFFF", "#0000FF"]);
 
            var states = svg.selectAll("path")
@@ -102,92 +135,89 @@
                .style("stroke-width", "1")
                .attr("fill",  function(d) {
                   var abv = stateIDtoABV(d.id);
-                  var rate = getRateByState(abv);
+                  var rate = getRateByStateAndMonth2(abv,userMonth);
+
+                  //NEED TO ADD A CHECK MAYBE RETURN RATE=0 IF THE # LOANS FOR
+                  //THAT MONTH IS INSUFFICIENT (<5????)
+                  //if(rate == 0){ fill it black or something}
+                  //else{return colorScale(rate)}
+
                   return colorScale(rate);
                 }
                )
                .on("mouseover", function(d) {
                  var abv = stateIDtoABV(d.id);
-                 var rate = getRateByState(abv);
-                 console.log(abv,rate);
+                 //var rate = getRateByState(abv);
+                 ///var rate2 = getRateByStateAndMonth2(abv,userMonth);
+                // var rate3 = getRateByStateAndMonth2(abv,userMonth);
+                // console.log(abv,rate,rate2);
+                 //showMoreInfo(abv,userMonth,userGrade);
+                 createPie(abv,userMonth); //Create the pie chart for state and month
                })
                .on("mouseout", function(d) {
+                 removePie();
                });
-        }
-        /*document.getElementById("month").onchange = function() {
-            console.log("yay");
-            console.log(this.val());
-          //  return false
-        };*/
-        function getRateByState(abv){
-
-          for(i=0;i<this.avgRateByState.length;i++){
-            var curr = avgRateByState[i];
-          //  console.log(curr);
-            if(curr.key == abv){
-              var value = curr.value.avgrate;
-              break;
-            }
-          }
-
-          return value;
-        }
-
-        var avgRateByMonth;
-        var avgRateByState;
-      function loadData()
-      {
-      d3.json("us-10m.json", function(json)
-        {
-            console.log("reading ur data ");
-            myPaths = json;
-            console.log(myPaths);
-        });
-       d3.csv("loan_data.csv", function(data) {
-        avgRateByState = d3.nest()
-                  .key(function(d) { return d.addr_state;})
-                  //.key(function(d) {return d.grade;})
-                   .rollup(function(g) { return{
-                      //count: g.length,
-                      total: d3.sum(g, function(g) { return g.loan_amnt; }),
-                      avgrate: d3.mean(g, function(g) { return g.int_rate; })
-            }}).entries(data);
-        avgRateByMonth = d3.nest()
-                  .key(function(d) { return d.month;})
-                  //.key(function(d) {return d.grade;})
-                   .rollup(function(g) { return{
-                      //count: g.length,
-                      total: d3.sum(g, function(g) { return g.loan_amnt; }),
-                      avgrate: d3.mean(g, function(g) { return g.int_rate; })
-            }}).entries(data);
-            console.log(avgRateByMonth);
-        avgRateByMonth_Grade = d3.nest()
-                      .key(function(d) { return d.month;})
-                      .key(function(d) { return d.grade;})
-                      //.key(function(d) {return d.grade;})
-                       .rollup(function(g) { return{
-                          //count: g.length,
-                          total: d3.sum(g, function(g) { return g.loan_amnt; }),
-                          avgrate: d3.mean(g, function(g) { return g.int_rate; })
-                }}).entries(data);
-        categories = d3.nest()
-                       .key(function(d) { return d.purpose;})
-                       //.key(function(d) {return d.grade;})
-                        .rollup(function(g) { return{
-                           count: g.length,
-                           total: d3.sum(g, function(g) { return g.loan_amnt; }),
-                           avgrate: d3.mean(g, function(g) { return g.int_rate; }),
-                 }}).entries(data);
-         console.log(categories);
-         this.createPie(categories);
-       });
      }
 
      function showGraph(){
        createGraph(this.avgRateByMonth);
      }
-     function createPie(data){
-       console.log("pie time", data);
+
+     function removePie(){
+       var elem = document.getElementById("pieChart");
+       elem.innerHTML = ' ';
+     }
+
+     function getRateByStateAndMonth2(abv,userMonth){
+      var data = this.stateAndMonth;
+        for(i=0;i<data.length;i++){
+            var curr = data[i];
+            var currAbv = curr.key;
+            if(currAbv == abv){ //Found the correct state
+               for(j=0;j<curr.values.length;j++){
+                  var curr2 = curr.values[j];
+                  var currMon = curr2.key;
+                  if(currMon == userMonth){ //Found month too
+                    var rate = curr2.value.avgrate; //Save array
+                    break;
+                  }
+                }
+            }
+          }
+          return rate;
+     }
+
+     function createPie(abv, userMonth){
+       //Need to get the purposes for abv and month
+       categories = d3.nest()
+                      .key(function(d) { return d.addr_state;})
+                      .key(function(d) { return d.month;})
+                      .key(function(d) { return d.purpose;})
+                      //.key(function(d) {return d.grade;})
+                       .rollup(function(g) { return{
+                          count: g.length,
+                          total: d3.sum(g, function(g) { return g.loan_amnt; }),
+                          avgrate: d3.mean(g, function(g) { return g.int_rate; }),
+                }}).entries(this.loandata);
+
+      //Now parse the "categories" in order to find the correct data according
+      //to abv, userMonth
+      //console.log(categories);
+      for(i=0;i<categories.length;i++){
+        var curr = categories[i];
+        var currAbv = curr.key;
+        if(currAbv == abv){ //Found the correct states
+          for(j=0;j<categories[i].values.length;j++){
+            var curr2 = categories[i].values[j];
+            var currMon = curr2.key;
+            if(currMon == userMonth){ //Found month too
+              var data = curr2.values; //Save array
+              break;
+            }
+          }
+        }
+      }
+       //console.log("pie time", data);
        //Need to create an array of objects for each "label", "value","color"
        var arr = [];
        for(i=0;i<data.length;i++){
@@ -198,29 +228,15 @@
          }
          arr.push(json);
        }
-       console.log(arr);
+       //console.log(arr);
        var pie = new d3pie("pieChart", {
-	  "header": {
-		"title": {
-			"text": "Reasons for Lending Club Loans",
-			"fontSize": 22,
-			"font": "verdana"
-		},
-		/*"subtitle": {
-			"text": "Comments my wife has made when I tell her I'm working on this script instead of doing something \"fun\".",
-			"color": "#999999",
-			"fontSize": 10,
-			"font": "verdana"
-		},
-		"titleSubtitlePadding": 12*/
-	},
-	/*"footer": {
-		"text": "Source: me, my room, the last couple of months.",
-		"color": "#999999",
-		"fontSize": 11,
-		"font": "open sans",
-		"location": "bottom-center"
-	},*/
+	         "header": {
+		           "title": {
+			              "text": "State: " + abv + " Month: " + userMonth,
+			               "fontSize": 22,
+			               "font": "verdana"
+		            },
+	         },
 	"size": {
 		"canvasHeight": 400,
 		"canvasWidth": 590,
@@ -291,7 +307,8 @@
        var lineC = transform(this.avgRateByMonth_Grade, "C");
        var lineD = transform(this.avgRateByMonth_Grade, "D");
        var lineE = transform(this.avgRateByMonth_Grade, "E");
-
+       var lineF = transform(this.avgRateByMonth_Grade, "F");
+       var lineG = transform(this.avgRateByMonth_Grade, "G");
        var xScale = d3.scaleBand()
                        .domain(myData.map( function(d)
                                  { //return parseInt(d.key)
@@ -301,7 +318,7 @@
                        .paddingInner(0.05);
 
        var yScale = d3.scaleLinear()
-                             .domain([ 0, d3.max(lineE, function(lineE) { return lineE.value; })])
+                             .domain([ 0, d3.max(lineG, function(lineG) { return lineG.value; })])
                              //.domain([d3.max(myData, function(d) { return d.value; }),0])
                              .range([height,0]);
        // Define the axes
@@ -317,7 +334,6 @@
       var valueline = d3.line()
              .x(function(d) { return xScale(d.key); })
              .y(function(d) { return yScale(d.value.avgrate); });
-
        var valuelineA = d3.line()
             .x(function(lineA) { return xScale(lineA.key); })
             .y(function(lineA) { return yScale(lineA.value); });
@@ -331,9 +347,14 @@
             .x(function(lineD) { return xScale(lineD.key); })
             .y(function(lineD) { return yScale(lineD.value); });
       var valuelineE = d3.line()
-              .x(function(lineE) { return xScale(lineE.key); })
+               .x(function(lineE) { return xScale(lineE.key); })
               .y(function(lineE) { return yScale(lineE.value); });
-
+      var valuelineF = d3.line()
+              .x(function(lineF) { return xScale(lineF.key); })
+              .y(function(lineF) { return yScale(lineF.value); });
+      var valuelineG = d3.line()
+              .x(function(lineG) { return xScale(lineG.key); })
+              .y(function(lineG) { return yScale(lineG.value); });
       // Adds the svg canvas
        var svg = d3.select("body")
             .append("svg")
@@ -377,6 +398,16 @@
               .attr("d", valuelineE(lineE))
               .style("stroke", "blue")
               .attr("data-legend","E");
+              svg.append("path")
+                        .attr("class", "line")
+                        .attr("d", valuelineF(lineF))
+                        .style("stroke", "blue")
+                        .attr("data-legend","F");
+                        svg.append("path")
+                                  .attr("class", "line")
+                                  .attr("d", valuelineG(lineG))
+                                  .style("stroke", "blue")
+                                  .attr("data-legend","G");
     // Add the X Axi
     svg.append("g")
         .attr("class", "x axis")
@@ -393,6 +424,7 @@
            .style("font-size","12px")
            .call(d3.legend)
      }
+
      function transform(d,g){
        console.log(g);
        //console.log(d);
@@ -419,29 +451,6 @@
        return arr;
      }
 
-
-
-  /*   function fetchData(){
-       var data = this.byState;
-       var userstate = document.getElementById('state').value;
-       var usermonth = document.getElementById('date').value;
-
-       for(i=0;i<data.length;i++){
-         var tmp = data[i];
-         var state = tmp.key;
-         if(userstate==state){
-           console.log(userstate,state);
-           for(j=0;j<data[i].values.length;j++){
-             var date = data[i].values[j].key;
-             var rate = data[i].values[j].value.avgrate;
-             if(date==userdate){
-               console.log(rate)
-               break;
-             }
-           }
-         }
-       }
-     }*/
      function stateIDtoABV(id){
        if(id == 2) return "AK";
        if(id == 1) return "AL"
