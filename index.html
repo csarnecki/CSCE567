@@ -45,6 +45,7 @@
       <div class="container">
             <div id="lineGraph" style="float: left;"></div>
             <div id="barChart" style="float: left; margin: auto;"></div>
+            <div id="barChartInfo" style="float: left; margin: auto;"></div>
       </div>
       <button id="init" type="button"  onclick="enterViz()"> Lets Get Started </button>
       <div id="info"> </div>
@@ -614,7 +615,7 @@ var pie = new d3pie("pieChart", {
      function createBarChart(){
        var svgBarWidth = 700 - margin.left - margin.right;
        var svgBarHeight = 300 - margin.top - margin.bottom;
-       var marginChart = {top: 30, right: 150 , bottom: 50, left: 40};
+       var marginChart = {top: 30, right: 10 , bottom: 50, left: 40};
        var byLoanType =  d3.nest()
                            .key(function(d) { return d.grade;})
                            //.key(function(d) { return d.sub_grade;})
@@ -679,40 +680,13 @@ var pie = new d3pie("pieChart", {
           })
           .attr("class", "myrect")
           .on("mouseover", function(d){
-            var arr = getLoanTypeInfo(d.key);
-            console.log("you over me", d.key);
-            console.log(arr);
-
-            for(i=0; i<arr.length;i++){
-              var curr = arr[i];
-              var location = 50*i;
-              svg.append("text")
-                  .attr("x", svgBarWidth + (marginChart.right/2))
-                  .attr("y", location)
-                  .attr("text-anchor", "middle")
-                  .style("font-size", "16px")
-                  //.style("text-decoration", "bold")
-                  .text(curr.name);
-              svg.append("text")
-                  .attr("x", svgBarWidth + (marginChart.right/2))
-                  .attr("y", location+15)
-                  .attr("text-anchor", "middle")
-                  .style("font-size", "12px")
-                  //.style("text-decoration", "bold")
-                  .text("Rate: " + curr.rate);
-              svg.append("text")
-                   .attr("x", svgBarWidth + (marginChart.right/2))
-                   .attr("y", location+30)
-                   .attr("text-anchor", "middle")
-                   .style("font-size", "12px")
-                   //.style("text-decoration", "bold")
-                   .text("Count: " + curr.count);
-            }
+            getLoanTypeInfo(d.key);
           })
           .on("mouseout", function(d){
             console.log(this);
-            d3.select(this)
-            .select("text").remove();
+          //  d3.select("#chartInfo").remove();
+            var curr = document.getElementById("barChartInfo");
+            curr.innerHTML = '';
           })
 
 
@@ -748,8 +722,42 @@ var pie = new d3pie("pieChart", {
           break;
         }
       }
+      var marginInfo = {top: 30, right: 10, bottom: 10, left: 10};
+      var svgInfoWidth = 100 - marginInfo.left - marginInfo.right;
+      var svgInfoHeight = 300 - marginInfo.top - marginInfo.bottom;
 
-      return arr;
+      var svg = d3.select("#barChartInfo")
+                  .append("svg")
+                  //.classed("containerChart", true)
+                  .attr("id", "chartInfo")
+                  .attr("width", svgInfoWidth + marginInfo.left + marginInfo.right)
+                  .attr("height", svgInfoHeight + marginInfo.top + marginInfo.bottom)
+                  .append("g")
+                  .attr("transform", "translate(" + marginInfo.left + "," + marginInfo.top + ")");
+       for(i=0; i<arr.length;i++){
+            var curr = arr[i];
+            var location = 50*i;
+
+            svg.append("text")
+                      .attr("x", 0)
+                      .attr("y", location)
+                      .attr("text-anchor", "left")
+                      .style("font-size", "16px")
+                      .style("text-decoration", "bold")
+                      .text(curr.name);
+            svg.append("text")
+                      .attr("x", 0)
+                      .attr("y", location+15)
+                      .attr("text-anchor", "left")
+                      .style("font-size", "12px")
+                      .text("Rate: " + curr.rate);
+            svg.append("text")
+                      .attr("x", 0)
+                      .attr("y", location+30)
+                      .attr("text-anchor", "left")
+                      .style("font-size", "12px")
+                      .text("Count: " + curr.count);
+      }
     }
 
      function stateIDtoABV(id){
