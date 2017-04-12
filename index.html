@@ -38,6 +38,10 @@
     .show{
       display: block;
     }
+    svg .myrect {
+            fill: steelblue;
+            stroke-width: 0px;
+        }
     </style>
 
     <body>
@@ -182,7 +186,10 @@
            var path = d3.geoPath()
                 .projection(projection);
 
-           colorScale = d3.scaleLinear().domain([min,max]).range(["#FF0000", "#00FF00"]);
+           var div = d3.select("body").append("div")
+     					    .attr("class", "tooltip")
+     					    .style("opacity", 0);
+           colorScale = d3.scaleLinear().domain([min,max]).range(["#00FF00", "#FF0000"]);
 
            var states = svg.selectAll("path")
                //.classed("containerMap", true)
@@ -273,8 +280,14 @@
                           total: d3.sum(g, function(g) { return g.loan_amnt; }),
                           avgrate: d3.mean(g, function(g) { return g.int_rate; }),
                 }}).entries(this.loandata);
+                categories2 = d3.nest()
+                               .key(function(d) { return d.loan_amnt;})
+                                .rollup(function(g) { return{
+                                   count: g.length,
+                                   avgrate: d3.mean(g, function(g) { return g.int_rate; }),
+                         }}).entries(this.loandata);
 
-
+                         console.log("cat2", categories2);
       //Now parse the "categories" in order to find the correct data according
       //to abv, userMonth
       //console.log(categories);
@@ -626,7 +639,9 @@ var pie = new d3pie("pieChart", {
         console.log("By Loan Type", byLoanType);
 
         myData = byLoanType;
-
+        myData.sort(function(a, b) {
+						 return d3.descending(a.value.count, b.value.count);
+					 });
 
         var svg = d3.select("#barChart")
                     .append("svg")
@@ -688,6 +703,14 @@ var pie = new d3pie("pieChart", {
             var curr = document.getElementById("barChartInfo");
             curr.innerHTML = '';
           })
+
+          svg.append("text")
+              .attr("x", (svgBarWidth / 2))
+              .attr("y", 0 - (marginChart.top/2))
+              .attr("text-anchor", "middle")
+              .style("font-size", "16px")
+              .style("text-decoration", "bold")
+              .text("Breakdown of Loan Type");
 
 
         }
