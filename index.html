@@ -612,9 +612,9 @@ var pie = new d3pie("pieChart", {
        return arr;
      }
      function createBarChart(){
-       var svgBarWidth = 600 - margin.left - margin.right;
+       var svgBarWidth = 800 - margin.left - margin.right;
        var svgBarHeight = 300 - margin.top - margin.bottom;
-       var marginChart = {top: 30, right: 10, bottom: 50, left: 75};
+       var marginChart = {top: 30, right: 200 , bottom: 50, left: 75};
        var byLoanType =  d3.nest()
                            .key(function(d) { return d.grade;})
                            //.key(function(d) { return d.sub_grade;})
@@ -629,10 +629,10 @@ var pie = new d3pie("pieChart", {
 
         var svg = d3.select("#barChart")
                     .append("svg")
-                    .classed("containerChart", true)
+                    //.classed("containerChart", true)
                     .attr("id", "chart")
-                    .attr("width", width + marginChart.left + marginChart.right)
-                    .attr("height", height + marginChart.top + marginChart.bottom)
+                    .attr("width", svgBarWidth + marginChart.left + marginChart.right)
+                    .attr("height", svgBarHeight + marginChart.top + marginChart.bottom)
                     .append("g")
                     .attr("transform", "translate(" + marginChart.left + "," + marginChart.top + ")");
 
