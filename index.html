@@ -32,12 +32,18 @@
       border-radius: 8px;
       pointer-events: none;
     }
+    .hide{
+      display:none;
+    }
     </style>
 
     <body>
       <h1 style="align:center;"> Lending Club Data Visualization </h1>
-
-      <button type="button" onclick="showGraph()"> Graph </button>
+      <div style="align horizontal">
+            <div id="lineGraph"></div>
+            <div id="barChart"></div>
+      </div>
+      <button id="init" type="button" onclick="enterViz()"> Lets Get Started </button>
 
       <div id="info"> </div>
       <select id="month" onchange="wrapper()">
@@ -70,8 +76,7 @@
         <option value="F">F</option>
         <option value="G">G</option>
       </select>
-      -->
-      <div id="lineGraph"></div>
+    -->
       <div id="container">
         <div id="map" class="containerMap"></div>
         <div id="pieChart" class="containerChart"></div>
@@ -121,8 +126,13 @@
                                                 avgrate: d3.mean(g, function(g) { return g.int_rate; })
                                     }}).entries(loandata);
               });
+              //Call the things we want to appear when the page is loaded
        }
-
+       function enterViz(){
+         createBarChart();
+         showGraph();
+         document.getElementById('init').classList.add('hide');
+       }
        function wrapper(){
          var userMonth = document.getElementById("month").value;
          //var userGrade = document.getElementById("grade").value;
@@ -609,6 +619,129 @@ var pie = new d3pie("pieChart", {
        console.log(arr);
        return arr;
      }
+     function createBarChart(){
+       var svgBarWidth = 500 - margin.left - margin.right;
+       var svgBarHeight = 400 - margin.top - margin.bottom;
+       var marginChart = {top: 30, right: 10, bottom: 50, left: 75};
+       var byLoanType =  d3.nest()
+                           .key(function(d) { return d.grade;})
+                           //.key(function(d) { return d.sub_grade;})
+                           .rollup(function(g) { return{
+                              count: g.length,
+                              avgrate: d3.mean(g, function(g) { return g.int_rate; }),
+                           }}).entries(this.loandata);
+        console.log("By Loan Type", byLoanType);
+
+        myData = byLoanType;
+
+
+        var svg = d3.select("#barChart")
+                    .append("svg")
+                    .classed("containerChart", true)
+                    .attr("id", "chart")
+                    .attr("width", width + marginChart.left + marginChart.right)
+                    .attr("height", height + marginChart.top + marginChart.bottom)
+                    .append("g")
+                    .attr("transform", "translate(" + marginChart.left + "," + marginChart.top + ")");
+
+                    // generate scales
+         var xScale = d3.scaleBand()
+                        .domain(myData.map( function(d)
+                            { return d.key;
+                          }))
+                         .range([0, svgBarWidth])
+                         .paddingInner(0.05);
+
+        var yScale = d3.scaleLinear()
+                       .domain([0, d3.max(myData, function(d) { return d.value.count; })])
+                       .range([svgBarHeight, 0]);
+
+         // generate axis
+        svg.append("g")
+           .attr("transform", "translate(0," + (svgBarHeight) + ")")
+           .call(d3.axisBottom(xScale));
+
+        svg.append("g")
+           .call(d3.axisLeft(yScale));
+
+        // generate bars
+        svg.selectAll("rect")
+           .data(myData)
+           .enter()
+           .append("rect")
+           .attr("x", function(d, i)
+           {
+              return xScale(d.key);
+           })
+          .attr("y", function(d, i)
+           {
+              return yScale(d.value.count);
+           })
+          .attr("height", function(d, i)
+          {
+              return svgBarHeight-yScale(d.value.count);
+          })
+          .attr("width", function(d, i)
+          {
+              return xScale.bandwidth();
+          })
+          .attr("class", "myrect");
+        }
+
+                              /*
+      g.append("g")
+      .selectAll("g")
+      .data(data)
+      .enter().append("g")
+      .attr("transform", function(d) { return "translate(" + x0(d.key) + ",0)"; })
+      .selectAll("rect")
+      .data(function(d) { return keys.map(function(key) { return {key: key, value: d[key]}; }); })
+      .enter().append("rect")
+      .attr("x", function(d) { return x1(d.key); })
+      .attr("y", function(d) { return y(d.value); })
+      .attr("width", x1.bandwidth())
+      .attr("height", function(d) { return height - y(d.value); })
+      .attr("fill", function(d) { return z(d.key); });
+
+  g.append("g")
+      .attr("class", "axis")
+      .attr("transform", "translate(0," + height + ")")
+      .call(d3.axisBottom(x0));
+
+  g.append("g")
+      .attr("class", "axis")
+      .call(d3.axisLeft(y).ticks(null, "s"))
+    .append("text")
+      .attr("x", 2)
+      .attr("y", y(y.ticks().pop()) + 0.5)
+      .attr("dy", "0.32em")
+      .attr("fill", "#000")
+      .attr("font-weight", "bold")
+      .attr("text-anchor", "start")
+      .text("Population");
+
+  /*var legend = g.append("g")
+      .attr("font-family", "sans-serif")
+      .attr("font-size", 10)
+      .attr("text-anchor", "end")
+    .selectAll("g")
+    .data(keys.slice().reverse())
+    .enter().append("g")
+      .attr("transform", function(d, i) { return "translate(0," + i * 20 + ")"; });
+
+  legend.append("rect")
+      .attr("x", width - 19)
+      .attr("width", 19)
+      .attr("height", 19)
+      .attr("fill", z);
+
+  legend.append("text")
+      .attr("x", width - 24)
+      .attr("y", 9.5)
+      .attr("dy", "0.32em")
+      .text(function(d) { return d; });*/
+//});
+     //}
 
      function stateIDtoABV(id){
        if(id == 2) return "AK";
