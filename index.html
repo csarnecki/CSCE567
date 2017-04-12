@@ -35,18 +35,20 @@
     .hide{
       display:none;
     }
+    .show{
+      display: block;
+    }
     </style>
 
     <body>
       <h1 style="align:center;"> Lending Club Data Visualization </h1>
-      <div style="align horizontal">
-            <div id="lineGraph"></div>
-            <div id="barChart"></div>
+      <div class="container">
+            <div id="lineGraph" style="float: left;"></div>
+            <div id="barChart" style="float: left; margin: auto;"></div>
       </div>
-      <button id="init" type="button" onclick="enterViz()"> Lets Get Started </button>
-
+      <button id="init" type="button"  onclick="enterViz()"> Lets Get Started </button>
       <div id="info"> </div>
-      <select id="month" onchange="wrapper()">
+      <select id="month" class="hide" onchange="wrapper()">
         <option value="Jan">January</option>
         <option value="Feb">February</option>
         <option value="Mar">March</option>
@@ -132,6 +134,7 @@
          createBarChart();
          showGraph();
          document.getElementById('init').classList.add('hide');
+         document.getElementById('month').classList.add('show');
        }
        function wrapper(){
          var userMonth = document.getElementById("month").value;
@@ -431,9 +434,9 @@ var pie = new d3pie("pieChart", {
      }
      function createGraph(d){
        // Set the dimensions of the canvas / graph
-       var margin = {top: 30, right: 20, bottom: 30, left: 50};
-       var width = 600 - margin.left - margin.right;
-       var height = 270 - margin.top - margin.bottom;
+       var marginGraph = {top: 30, right: 20, bottom: 30, left: 50};
+       var widthGraph = 600 - marginGraph.left - marginGraph.right;
+       var heightGraph = 300 - marginGraph.top - marginGraph.bottom;
        myData = d;
        // Parse the date / time
        //var parseDate = d3.time.format("%d-%b-%y").parse;
@@ -461,13 +464,13 @@ var pie = new d3pie("pieChart", {
                                  { //return parseInt(d.key)
                                    return d.key
                                  }))
-                       .range([width, 0])
+                       .range([widthGraph, 0])
                        .paddingInner(0.05);
 
        var yScale = d3.scaleLinear()
                              .domain([ 0, d3.max(lineG, function(lineG) { return lineG.value; })])
                              //.domain([d3.max(myData, function(d) { return d.value; }),0])
-                             .range([height,0]);
+                             .range([heightGraph,0]);
        // Define the axes
 
        var xAxis = d3.axisBottom()
@@ -505,11 +508,11 @@ var pie = new d3pie("pieChart", {
       // Adds the svg canvas
        var svg = d3.select("#lineGraph")
             .append("svg")
-            .attr("width", width + margin.left + margin.right)
-            .attr("height", height + margin.top + margin.bottom)
+            .attr("width", widthGraph + marginGraph.left + marginGraph.right)
+            .attr("height", heightGraph + marginGraph.top + marginGraph.bottom)
             .append("g")
             .attr("transform",
-              "translate(" + margin.left + "," + margin.top + ")");
+              "translate(" + marginGraph.left + "," + marginGraph.top + ")");
             // Scale the range of the data
     //xScale.domain(d3.extent(this.avgRateByMonth, function(d) { return d.key; }));
   //  yScale.domain([0, max]);
@@ -559,7 +562,7 @@ var pie = new d3pie("pieChart", {
     // Add the X Axi
     svg.append("g")
         .attr("class", "x axis")
-        .attr("transform", "translate(0," + height + ")")
+        .attr("transform", "translate(0," + heightGraph + ")")
         .call(xAxis);
 
     // Add the Y Axis
@@ -568,26 +571,15 @@ var pie = new d3pie("pieChart", {
         .call(yAxis);
     //X-Axis Label
     svg.append("text")
-        .attr("x", (width / 2))
-        .attr("y", height + margin.bottom)
+        .attr("x", (widthGraph / 2))
+        .attr("y", heightGraph + marginGraph.bottom)
         .attr("text-anchor", "middle")
         .style("font-size", "12px")
         .text("Month");
 
-    //Y-Axis Label
     svg.append("text")
-        .attr("x", (height/2))
-        .attr("y", 0+margin.left)
-        .attr("text-anchor", "middle")
-        .style("font-size", "12px")
-        .attr("transform", function(d) {
-            return "rotate(-90)"
-        })
-        .text("Interest Rate");
-
-    svg.append("text")
-        .attr("x", (width / 2))
-        .attr("y", 0-(margin.top/2))
+        .attr("x", (widthGraph / 2))
+        .attr("y", 0 - (marginGraph.top/2))
         .attr("text-anchor", "middle")
         .style("font-size", "16px")
         .style("text-decoration", "bold")
@@ -620,8 +612,8 @@ var pie = new d3pie("pieChart", {
        return arr;
      }
      function createBarChart(){
-       var svgBarWidth = 500 - margin.left - margin.right;
-       var svgBarHeight = 400 - margin.top - margin.bottom;
+       var svgBarWidth = 600 - margin.left - margin.right;
+       var svgBarHeight = 300 - margin.top - margin.bottom;
        var marginChart = {top: 30, right: 10, bottom: 50, left: 75};
        var byLoanType =  d3.nest()
                            .key(function(d) { return d.grade;})
@@ -685,7 +677,10 @@ var pie = new d3pie("pieChart", {
           {
               return xScale.bandwidth();
           })
-          .attr("class", "myrect");
+          .attr("class", "myrect")
+          .on("mouseover", function(d){
+            console.log("you over me");
+          });
         }
 
                               /*
