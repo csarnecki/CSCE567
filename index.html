@@ -434,8 +434,8 @@ var pie = new d3pie("pieChart", {
      }
      function createGraph(d){
        // Set the dimensions of the canvas / graph
-       var marginGraph = {top: 30, right: 20, bottom: 30, left: 50};
-       var widthGraph = 600 - marginGraph.left - marginGraph.right;
+       var marginGraph = {top: 30, right: 10, bottom: 30, left: 50};
+       var widthGraph = 500 - marginGraph.left - marginGraph.right;
        var heightGraph = 300 - marginGraph.top - marginGraph.bottom;
        myData = d;
        // Parse the date / time
@@ -612,9 +612,9 @@ var pie = new d3pie("pieChart", {
        return arr;
      }
      function createBarChart(){
-       var svgBarWidth = 800 - margin.left - margin.right;
+       var svgBarWidth = 700 - margin.left - margin.right;
        var svgBarHeight = 300 - margin.top - margin.bottom;
-       var marginChart = {top: 30, right: 200 , bottom: 50, left: 75};
+       var marginChart = {top: 30, right: 150 , bottom: 50, left: 40};
        var byLoanType =  d3.nest()
                            .key(function(d) { return d.grade;})
                            //.key(function(d) { return d.sub_grade;})
@@ -679,64 +679,78 @@ var pie = new d3pie("pieChart", {
           })
           .attr("class", "myrect")
           .on("mouseover", function(d){
-            console.log("you over me");
-          });
+            var arr = getLoanTypeInfo(d.key);
+            console.log("you over me", d.key);
+            console.log(arr);
+
+            for(i=0; i<arr.length;i++){
+              var curr = arr[i];
+              var location = 50*i;
+              svg.append("text")
+                  .attr("x", svgBarWidth + (marginChart.right/2))
+                  .attr("y", location)
+                  .attr("text-anchor", "middle")
+                  .style("font-size", "16px")
+                  //.style("text-decoration", "bold")
+                  .text(curr.name);
+              svg.append("text")
+                  .attr("x", svgBarWidth + (marginChart.right/2))
+                  .attr("y", location+15)
+                  .attr("text-anchor", "middle")
+                  .style("font-size", "12px")
+                  //.style("text-decoration", "bold")
+                  .text("Rate: " + curr.rate);
+              svg.append("text")
+                   .attr("x", svgBarWidth + (marginChart.right/2))
+                   .attr("y", location+30)
+                   .attr("text-anchor", "middle")
+                   .style("font-size", "12px")
+                   //.style("text-decoration", "bold")
+                   .text("Count: " + curr.count);
+            }
+          })
+          .on("mouseout", function(d){
+            console.log(this);
+            d3.select(this)
+            .select("text").remove();
+          })
+
+
         }
+    function getLoanTypeInfo(type){
+      var info =  d3.nest()
+                          .key(function(d) { return d.grade;})
+                          .key(function(d) { return d.sub_grade;})
+                          .rollup(function(g) { return{
+                             count: g.length,
+                             min: d3.min(g, function(g) { return g.int_rate; }),
+                             max: d3.max(g, function(g) { return g.int_rate; }),
+                             avgDTI: d3.mean(g, function(g) { return g.dti; }),
+                             avgrate: d3.mean(g, function(g) { return g.int_rate; }),
+                           }}).entries(this.loandata);
+      console.log(info);
+      var arr = [];
 
-                              /*
-      g.append("g")
-      .selectAll("g")
-      .data(data)
-      .enter().append("g")
-      .attr("transform", function(d) { return "translate(" + x0(d.key) + ",0)"; })
-      .selectAll("rect")
-      .data(function(d) { return keys.map(function(key) { return {key: key, value: d[key]}; }); })
-      .enter().append("rect")
-      .attr("x", function(d) { return x1(d.key); })
-      .attr("y", function(d) { return y(d.value); })
-      .attr("width", x1.bandwidth())
-      .attr("height", function(d) { return height - y(d.value); })
-      .attr("fill", function(d) { return z(d.key); });
+      for(i=0;i<info.length;i++){
+        var curr = info[i];
+        if(curr.key==type){//Found the loan type
+          for(j=0;j<curr.values.length;j++){
+            var subloan = curr.values[j].key;
+            var count = curr.values[j].value.count;
+            var rate = curr.values[j].value.avgrate;
+            var json = {
+              "name": subloan,
+              "count": count,
+              "rate": rate,
+            }
+            arr.push(json);
+          }
+          break;
+        }
+      }
 
-  g.append("g")
-      .attr("class", "axis")
-      .attr("transform", "translate(0," + height + ")")
-      .call(d3.axisBottom(x0));
-
-  g.append("g")
-      .attr("class", "axis")
-      .call(d3.axisLeft(y).ticks(null, "s"))
-    .append("text")
-      .attr("x", 2)
-      .attr("y", y(y.ticks().pop()) + 0.5)
-      .attr("dy", "0.32em")
-      .attr("fill", "#000")
-      .attr("font-weight", "bold")
-      .attr("text-anchor", "start")
-      .text("Population");
-
-  /*var legend = g.append("g")
-      .attr("font-family", "sans-serif")
-      .attr("font-size", 10)
-      .attr("text-anchor", "end")
-    .selectAll("g")
-    .data(keys.slice().reverse())
-    .enter().append("g")
-      .attr("transform", function(d, i) { return "translate(0," + i * 20 + ")"; });
-
-  legend.append("rect")
-      .attr("x", width - 19)
-      .attr("width", 19)
-      .attr("height", 19)
-      .attr("fill", z);
-
-  legend.append("text")
-      .attr("x", width - 24)
-      .attr("y", 9.5)
-      .attr("dy", "0.32em")
-      .text(function(d) { return d; });*/
-//});
-     //}
+      return arr;
+    }
 
      function stateIDtoABV(id){
        if(id == 2) return "AK";
