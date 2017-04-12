@@ -20,9 +20,23 @@
       float: left;
       margin-left: auto;
     }
+    div.tooltip {
+      position: absolute;
+      text-align: center;
+      width: 70px;
+      height: 28px;
+      padding: 2px;
+      font: 10px sans-serif;
+      background: lightsteelblue;
+      border: 0px;
+      border-radius: 8px;
+      pointer-events: none;
+    }
     </style>
 
     <body>
+      <h1 style="align:center;"> Lending Club Data Visualization </h1>
+
       <button type="button" onclick="showGraph()"> Graph </button>
 
       <div id="info"> </div>
@@ -40,6 +54,13 @@
         <option value="Nov">November</option>
         <option value="Dec">December</option>
       </select>
+      <!--<select id="byOption" onchange="wrapper()">
+        <option value="avg">Average</option>
+        <option value="numLoans"># of Loans</option>
+        <option value="amntFunded">Amount Funded</option>
+      </select>
+      <button onchange="wrapper()"> Submit </button>-->
+      <!--
       <select id="grade" onchange="wrapper()">
         <option value="A">A</option>
         <option value="B">B</option>
@@ -49,6 +70,7 @@
         <option value="F">F</option>
         <option value="G">G</option>
       </select>
+      -->
       <div id="lineGraph"></div>
       <div id="container">
         <div id="map" class="containerMap"></div>
@@ -69,9 +91,7 @@
 
             d3.json("us-10m.json", function(json)
               {
-                  //console.log("reading ur data ");
                   myPaths = json;
-                  //console.log(myPaths);
               });
 
              d3.csv("loan_data.csv", function(data) {
@@ -105,7 +125,8 @@
 
        function wrapper(){
          var userMonth = document.getElementById("month").value;
-         var userGrade = document.getElementById("grade").value;
+         //var userGrade = document.getElementById("grade").value;
+         var userGrade = ' ';
          //Remove current map
          var elem = document.getElementById("map");
          elem.innerHTML = ' ';
@@ -171,17 +192,26 @@
                   }
                 }
                )
-               .on("mouseover", function(d) {
+               .on("click", function(d) {
+                 var elem = document.getElementById("pieChart");
+                 elem.innerHTML = ' ';
                  var abv = stateIDtoABV(d.id);
-                 //var rate = getRateByState(abv);
-                 ///var rate2 = getRateByStateAndMonth2(abv,userMonth);
-                // var rate3 = getRateByStateAndMonth2(abv,userMonth);
-                // console.log(abv,rate,rate2);
-                 //showMoreInfo(abv,userMonth,userGrade);
                  createPie(abv,userMonth); //Create the pie chart for state and month
                })
+               .on("mouseover", function(d){
+                 var abv = stateIDtoABV(d.id);
+                 var rate = getRateByStateAndMonth2(abv,userMonth);
+                 div.transition()
+                 .duration(200)
+                 .style("opacity", .9);
+                 div.html(abv + "<br/>" + "Avg Rate:" + rate)
+                 .style("left", (d3.event.pageX) + "px")
+                 .style("top", (d3.event.pageY - 28) + "px");
+               })
                .on("mouseout", function(d) {
-                 removePie();
+                 div.transition()
+                 .duration(500)
+                 .style("opacity", 0);
                });
      }
 
@@ -421,7 +451,7 @@ var pie = new d3pie("pieChart", {
                                  { //return parseInt(d.key)
                                    return d.key
                                  }))
-                       .range([0, width])
+                       .range([width, 0])
                        .paddingInner(0.05);
 
        var yScale = d3.scaleLinear()
@@ -526,11 +556,32 @@ var pie = new d3pie("pieChart", {
     svg.append("g")
         .attr("class", "y axis")
         .call(yAxis);
-        legend = svg.append("g")
-           .attr("class","legend")
-           .attr("transform","translate(50,30)")
-           .style("font-size","12px")
-           .call(d3.legend)
+    //X-Axis Label
+    svg.append("text")
+        .attr("x", (width / 2))
+        .attr("y", height + margin.bottom)
+        .attr("text-anchor", "middle")
+        .style("font-size", "12px")
+        .text("Month");
+
+    //Y-Axis Label
+    svg.append("text")
+        .attr("x", (height/2))
+        .attr("y", 0+margin.left)
+        .attr("text-anchor", "middle")
+        .style("font-size", "12px")
+        .attr("transform", function(d) {
+            return "rotate(-90)"
+        })
+        .text("Interest Rate");
+
+    svg.append("text")
+        .attr("x", (width / 2))
+        .attr("y", 0-(margin.top/2))
+        .attr("text-anchor", "middle")
+        .style("font-size", "16px")
+        .style("text-decoration", "bold")
+        .text("Average Rate By Month (2007-2011)");
      }
 
      function transform(d,g){
