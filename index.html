@@ -11,7 +11,7 @@
     .line {
       fill: none;
       stroke: steelblue;
-      stroke-width: 2px;
+      stroke-width: 4px;
     }
     .containerMap {
       float: left;
@@ -23,10 +23,10 @@
     div.tooltip {
       position: absolute;
       text-align: center;
-      width: 70px;
-      height: 28px;
+      width: 100px;
+      height: 50px;
       padding: 2px;
-      font: 10px sans-serif;
+      font: 14px sans-serif;
       background: lightsteelblue;
       border: 0px;
       border-radius: 8px;
@@ -38,10 +38,8 @@
     .show{
       display: block;
     }
-    svg .myrect {
-            fill: steelblue;
-            stroke-width: 0px;
-        }
+   
+        
     </style>
 
     <body>
@@ -54,6 +52,7 @@
       <button id="init" type="button"  onclick="enterViz()"> Lets Get Started </button>
       <div id="info"> </div>
       <select id="month" class="hide" onchange="wrapper()">
+       <!-- <option value="Full">Full Data Set</option> -->
         <option value="Jan">January</option>
         <option value="Feb">February</option>
         <option value="Mar">March</option>
@@ -138,6 +137,7 @@
        function enterViz(){
          createBarChart();
          showGraph();
+        // createMap(userMonth, userGrade);
          document.getElementById('init').classList.add('hide');
          document.getElementById('month').classList.add('show');
        }
@@ -189,7 +189,9 @@
            var div = d3.select("body").append("div")
      					    .attr("class", "tooltip")
      					    .style("opacity", 0);
-           colorScale = d3.scaleLinear().domain([min,max]).range(["#00FF00", "#FF0000"]);
+           colorScale = d3.scaleLinear()
+                          .domain([min,max])
+                          .range(["#ffffff", "#009933"]);
 
            var states = svg.selectAll("path")
                //.classed("containerMap", true)
@@ -222,10 +224,12 @@
                .on("mouseover", function(d){
                  var abv = stateIDtoABV(d.id);
                  var rate = getRateByStateAndMonth2(abv,userMonth);
+                 var rateClean = rate*100;
+                 rateClean = rateClean.toFixed(5)
                  div.transition()
                  .duration(200)
                  .style("opacity", .9);
-                 div.html(abv + "<br/>" + "Avg Rate:" + rate)
+                 div.html(abv + "<br/>" + "Avg Rate:" + rateClean +"%")
                  .style("left", (d3.event.pageX) + "px")
                  .style("top", (d3.event.pageY - 28) + "px");
                })
@@ -540,37 +544,37 @@ var pie = new d3pie("pieChart", {
     svg.append("path")
             .attr("class", "line")
             .attr("d", valuelineA(lineA))
-            .style("stroke", "#006400")
+            .style("stroke", "#006622")
             .attr("data-legend","A");
     svg.append("path")
             .attr("class", "line")
             .attr("d", valuelineB(lineB))
-            .style("stroke", "#90EE90")
+            .style("stroke", "#009933")
             .attr("data-legend","B");
     svg.append("path")
              .attr("class", "line")
              .attr("d", valuelineC(lineC))
-             .style("stroke", "#FFFF00")
+             .style("stroke", "#00cc00")
              .attr("data-legend","C");
      svg.append("path")
               .attr("class", "line")
               .attr("d", valuelineD(lineD))
-              .style("stroke", "#8b0000")
+              .style("stroke", "#00cc66")
               .attr("data-legend","D");
      svg.append("path")
               .attr("class", "line")
               .attr("d", valuelineE(lineE))
-              .style("stroke", "#8b0000")
+              .style("stroke", "#00cccc")
               .attr("data-legend","E");
      svg.append("path")
               .attr("class", "line")
               .attr("d", valuelineF(lineF))
-              .style("stroke", "#8b0000")
+              .style("stroke", "#0099cc")
               .attr("data-legend","F");
      svg.append("path")
               .attr("class", "line")
               .attr("d", valuelineG(lineG))
-              .style("stroke", "#8b0000")
+              .style("stroke", "#0000cc")
               .attr("data-legend","G");
 
     // Add the X Axi
@@ -693,9 +697,33 @@ var pie = new d3pie("pieChart", {
           {
               return xScale.bandwidth();
           })
+          .attr("fill", function(d){
+            if(d.key =="G"){
+              return "#0000cc";
+            }
+            if(d.key =="F"){
+              return "#0099cc";
+            }
+            if(d.key =="E"){
+              return "#00cccc";
+            }
+            if(d.key =="D"){
+              return "#00cc66";
+            }
+            if(d.key =="C"){
+              return "#00cc00";
+            }
+            if(d.key =="B"){
+              return "#009933";
+            }
+            if(d.key =="A"){
+              return "#006622";
+            }
+          })
           .attr("class", "myrect")
           .on("mouseover", function(d){
             getLoanTypeInfo(d.key);
+
           })
           .on("mouseout", function(d){
             console.log(this);
@@ -711,8 +739,6 @@ var pie = new d3pie("pieChart", {
               .style("font-size", "16px")
               .style("text-decoration", "bold")
               .text("Breakdown of Loan Type");
-
-
         }
     function getLoanTypeInfo(type){
       var info =  d3.nest()
