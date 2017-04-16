@@ -189,9 +189,11 @@
            var div = d3.select("body").append("div")
      					    .attr("class", "tooltip")
      					    .style("opacity", 0);
+          
            colorScale = d3.scaleLinear()
                           .domain([min,max])
-                          .range(["#ffffff", "#009933"]);
+                          .range(["#000000", "#00ff00"]);//"#009933"]);
+                          
 
            var states = svg.selectAll("path")
                //.classed("containerMap", true)
@@ -209,7 +211,7 @@
                   //THAT MONTH IS INSUFFICIENT (<5????)
                   //if(rate == 0){ fill it black or something}
                   //else{return colorScale(rate)}
-                  if(rate ==0) return 0; //INSUFFICIENT DATA
+                  if(rate ==0) return "#ffffff"; //INSUFFICIENT DATA
                   else{
                       return colorScale(rate);
                   }
@@ -533,18 +535,24 @@ var pie = new d3pie("pieChart", {
               "translate(" + marginGraph.left + "," + marginGraph.top + ")");
             // Scale the range of the data
     //xScale.domain(d3.extent(this.avgRateByMonth, function(d) { return d.key; }));
-  //  yScale.domain([0, max]);
-
+    //  yScale.domain([0, max]);
+    colorScale = d3.scaleLinear()
+            .domain([0,0.2])
+            .range(["#000000", "#ff0000"]);//"#009933"]);
     // Add the valueline path.
     svg.append("path")
         .attr("class", "line")
         .attr("d", valueline(this.avgRateByMonth))
         .style("stroke", "black")
         .attr("data-legend","all");
+
     svg.append("path")
             .attr("class", "line")
             .attr("d", valuelineA(lineA))
-            .style("stroke", "#006622")
+            .style("stroke", function(d){
+              return colorScale(lineA.value)
+            })
+            //.style("stroke", "#006622")
             .attr("data-legend","A");
     svg.append("path")
             .attr("class", "line")
@@ -655,7 +663,6 @@ var pie = new d3pie("pieChart", {
                     .attr("height", svgBarHeight + marginChart.top + marginChart.bottom)
                     .append("g")
                     .attr("transform", "translate(" + marginChart.left + "," + marginChart.top + ")");
-
                     // generate scales
          var xScale = d3.scaleBand()
                         .domain(myData.map( function(d)
@@ -667,7 +674,10 @@ var pie = new d3pie("pieChart", {
         var yScale = d3.scaleLinear()
                        .domain([0, d3.max(myData, function(d) { return d.value.count; })])
                        .range([svgBarHeight, 0]);
-
+                       //NEW LINE
+        colorScale = d3.scaleLinear()
+                          .domain([0, d3.max(myData, function(d) { return d.value.count; })])
+                          .range(["#000000", "#00ff00"]);//"#009933"]);
          // generate axis
         svg.append("g")
            .attr("transform", "translate(0," + (svgBarHeight) + ")")
@@ -697,29 +707,13 @@ var pie = new d3pie("pieChart", {
           {
               return xScale.bandwidth();
           })
+          .attr("stroke", "#000000")
+          .attr("stroke-width", 1)
           .attr("fill", function(d){
-            if(d.key =="G"){
-              return "#0000cc";
-            }
-            if(d.key =="F"){
-              return "#0099cc";
-            }
-            if(d.key =="E"){
-              return "#00cccc";
-            }
-            if(d.key =="D"){
-              return "#00cc66";
-            }
-            if(d.key =="C"){
-              return "#00cc00";
-            }
-            if(d.key =="B"){
-              return "#009933";
-            }
-            if(d.key =="A"){
-              return "#006622";
-            }
-          })
+                      
+                      return colorScale(d.value.count)
+                    })
+    
           .attr("class", "myrect")
           .on("mouseover", function(d){
             getLoanTypeInfo(d.key);
@@ -764,7 +758,7 @@ var pie = new d3pie("pieChart", {
             var json = {
               "name": subloan,
               "count": count,
-              "rate": rate,
+              "rate": rate.toFixed(5),
             }
             arr.push(json);
           }
