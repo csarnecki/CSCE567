@@ -10,8 +10,8 @@
     <style>
     .line {
       fill: none;
-      stroke: steelblue;
-      stroke-width: 4px;
+      stroke:black;
+      stroke-width: 5px;
     }
     .containerMap {
       float: left;
@@ -32,6 +32,18 @@
       border-radius: 8px;
       pointer-events: none;
     }
+    div.tooltip_line {
+      position: absolute;
+      text-align: center;
+      width: 30px;
+      height: 20px;
+      padding: 2px;
+      font: 14px sans-serif;
+      background: lightsteelblue;
+      border: 0px;
+      border-radius: 8px;
+      pointer-events: none;
+    }
     .hide{
       display:none;
     }
@@ -43,16 +55,17 @@
     </style>
 
     <body>
+      <body style="background-color:lightsteelblue">
       <h1 style="align:center;"> Lending Club Data Visualization </h1>
       <div class="container">
-            <div id="lineGraph" style="float: left;"></div>
+            <div id="lineGraph" style="float: left; margin:auto;"></div>
             <div id="barChart" style="float: left; margin: auto;"></div>
             <div id="barChartInfo" style="float: left; margin: auto;"></div>
       </div>
       <button id="init" type="button"  onclick="enterViz()"> Lets Get Started </button>
       <div id="info"> </div>
       <select id="month" class="hide" onchange="wrapper()">
-       <!-- <option value="Full">Full Data Set</option> -->
+        <option value="All">All</option>
         <option value="Jan">January</option>
         <option value="Feb">February</option>
         <option value="Mar">March</option>
@@ -133,6 +146,7 @@
                                     }}).entries(loandata);
               });
               //Call the things we want to appear when the page is loaded
+              //createMap("All", "dlkdl");
        }
        function enterViz(){
          createBarChart();
@@ -154,6 +168,11 @@
           //var userMonth = document.getElementById("month").value;
           //var userGrade = document.getElementById("grade").value;
           //Grab the appropriate data
+
+          //if(userMonth == "All"){
+
+
+          //}
            var max = 0;
            var min = 1;
            for(i=0;i<this.stateAndMonth.length;i++){
@@ -192,7 +211,7 @@
           
            colorScale = d3.scaleLinear()
                           .domain([min,max])
-                          .range(["#000000", "#00ff00"]);//"#009933"]);
+                          .range(["#00ff64", "#000000"]);//"#009933"]);
                           
 
            var states = svg.selectAll("path")
@@ -201,7 +220,7 @@
                .enter()
                .append("path")
                .attr("d", path)
-               .style("stroke", "#D3D3D3")
+               .style("stroke", "#000000")
                .style("stroke-width", "1")
                .attr("fill",  function(d) {
                   var abv = stateIDtoABV(d.id);
@@ -211,7 +230,7 @@
                   //THAT MONTH IS INSUFFICIENT (<5????)
                   //if(rate == 0){ fill it black or something}
                   //else{return colorScale(rate)}
-                  if(rate ==0) return "#ffffff"; //INSUFFICIENT DATA
+                  if(rate ==0) return "#fffacd"; //INSUFFICIENT DATA
                   else{
                       return colorScale(rate);
                   }
@@ -227,7 +246,7 @@
                  var abv = stateIDtoABV(d.id);
                  var rate = getRateByStateAndMonth2(abv,userMonth);
                  var rateClean = rate*100;
-                 rateClean = rateClean.toFixed(5)
+                 rateClean = rateClean.toFixed(3)
                  div.transition()
                  .duration(200)
                  .style("opacity", .9);
@@ -377,6 +396,10 @@
 	}
 });*/
 
+var colorScale = d3.scaleLinear()
+    .domain([])
+    .range(["#000000", "#00ff64"]);
+
 var pie = new d3pie("pieChart", {
 	"header": {
 		"title": {
@@ -410,6 +433,7 @@ var pie = new d3pie("pieChart", {
 		},
 		"content": arr,
 	},
+
 	"labels": {
 		"outer": {
 			"pieDistance": 20
@@ -499,7 +523,9 @@ var pie = new d3pie("pieChart", {
        var yAxis = d3.axisLeft()
         .scale(yScale);
 
-
+      var div = d3.select("body").append("div")
+     					    .attr("class", "tooltip_line")
+     					    .style("opacity", 0);
       //Lines
       var valueline = d3.line()
              .x(function(d) { return xScale(d.key); })
@@ -543,47 +569,149 @@ var pie = new d3pie("pieChart", {
     svg.append("path")
         .attr("class", "line")
         .attr("d", valueline(this.avgRateByMonth))
-        .style("stroke", "black")
-        .attr("data-legend","all");
+        .style("stroke", "white")
+        .style("stroke-width", "5pt")
+        .attr("data-legend","all")
+        .on("mouseover", function(d){
+                 div.transition()
+                 .duration(200)
+                 .style("opacity", .9);
+                 div.html("Avg")
+                 .style("left", (d3.event.pageX) + "px")
+                 .style("top", (d3.event.pageY - 15) + "px");
+               })
+               .on("mouseout", function(d) {
+                 div.transition()
+                 .duration(500)
+                 .style("opacity", 0);
+               });
 
     svg.append("path")
             .attr("class", "line")
             .attr("d", valuelineA(lineA))
-            .style("stroke", function(d){
-              return colorScale(lineA.value)
-            })
-            //.style("stroke", "#006622")
-            .attr("data-legend","A");
+            .style("stroke", "#00d252")
+            .attr("data-legend","A")
+            .on("mouseover", function(d){
+                 div.transition()
+                 .duration(200)
+                 .style("opacity", .9);
+                 div.html("A")
+                 .style("left", (d3.event.pageX - 15) + "px")
+                 .style("top", (d3.event.pageY - 15) + "px");
+               })
+               .on("mouseout", function(d) {
+                 div.transition()
+                 .duration(500)
+                 .style("opacity", 0);
+               });
     svg.append("path")
             .attr("class", "line")
             .attr("d", valuelineB(lineB))
-            .style("stroke", "#009933")
-            .attr("data-legend","B");
+            .style("stroke", "#00ff64")
+            .attr("data-legend","B")
+            .on("mouseover", function(d){
+                 div.transition()
+                 .duration(200)
+                 .style("opacity", .9);
+                 div.html("B")
+                 .style("left", (d3.event.pageX - 15) + "px")
+                 .style("top", (d3.event.pageY - 15) + "px");
+               })
+               .on("mouseout", function(d) {
+                 div.transition()
+                 .duration(500)
+                 .style("opacity", 0);
+               });
     svg.append("path")
              .attr("class", "line")
              .attr("d", valuelineC(lineC))
-             .style("stroke", "#00cc00")
-             .attr("data-legend","C");
+             .style("stroke", "#00b447")
+             .attr("data-legend","C")
+             .on("mouseover", function(d){
+                 div.transition()
+                 .duration(200)
+                 .style("opacity", .9);
+                 div.html("C")
+                 .style("left", (d3.event.pageX - 15) + "px")
+                 .style("top", (d3.event.pageY - 15) + "px");
+               })
+               .on("mouseout", function(d) {
+                 div.transition()
+                 .duration(500)
+                 .style("opacity", 0);
+               });
      svg.append("path")
               .attr("class", "line")
               .attr("d", valuelineD(lineD))
-              .style("stroke", "#00cc66")
-              .attr("data-legend","D");
+              .style("stroke", "#007c31")
+              .attr("data-legend","D")
+              .on("mouseover", function(d){
+                 div.transition()
+                 .duration(200)
+                 .style("opacity", .9);
+                 div.html("D")
+                 .style("left", (d3.event.pageX - 15) + "px")
+                 .style("top", (d3.event.pageY - 15) + "px");
+               })
+               .on("mouseout", function(d) {
+                 div.transition()
+                 .duration(500)
+                 .style("opacity", 0);
+               });
      svg.append("path")
               .attr("class", "line")
               .attr("d", valuelineE(lineE))
-              .style("stroke", "#00cccc")
-              .attr("data-legend","E");
+              .style("stroke", "#00461b")
+              .attr("data-legend","E")
+              .on("mouseover", function(d){
+                 div.transition()
+                 .duration(200)
+                 .style("opacity", .9);
+                 div.html("E")
+                 .style("left", (d3.event.pageX - 15) + "px")
+                 .style("top", (d3.event.pageY - 15) + "px");
+               })
+               .on("mouseout", function(d) {
+                 div.transition()
+                 .duration(500)
+                 .style("opacity", 0);
+               });
      svg.append("path")
               .attr("class", "line")
               .attr("d", valuelineF(lineF))
-              .style("stroke", "#0099cc")
-              .attr("data-legend","F");
+              .style("stroke", "#001b0b")
+              .attr("data-legend","F")
+              .on("mouseover", function(d){
+                 div.transition()
+                 .duration(200)
+                 .style("opacity", .9);
+                 div.html("F")
+                 .style("left", (d3.event.pageX - 15) + "px")
+                 .style("top", (d3.event.pageY - 15) + "px");
+               })
+               .on("mouseout", function(d) {
+                 div.transition()
+                 .duration(500)
+                 .style("opacity", 0);
+               });
      svg.append("path")
               .attr("class", "line")
               .attr("d", valuelineG(lineG))
-              .style("stroke", "#0000cc")
-              .attr("data-legend","G");
+              .style("stroke", "#000b04")
+              .attr("data-legend","G")
+              .on("mouseover", function(d){
+                 div.transition()
+                 .duration(200)
+                 .style("opacity", .9);
+                 div.html("G")
+                 .style("left", (d3.event.pageX -15) + "px")
+                 .style("top", (d3.event.pageY -15) + "px");
+               })
+               .on("mouseout", function(d) {
+                 div.transition()
+                 .duration(500)
+                 .style("opacity", 0);
+               });
 
     // Add the X Axi
     svg.append("g")
@@ -677,7 +805,7 @@ var pie = new d3pie("pieChart", {
                        //NEW LINE
         colorScale = d3.scaleLinear()
                           .domain([0, d3.max(myData, function(d) { return d.value.count; })])
-                          .range(["#000000", "#00ff00"]);//"#009933"]);
+                          .range(["#000000", "#00ff64"]);//"#009933"]);
          // generate axis
         svg.append("g")
            .attr("transform", "translate(0," + (svgBarHeight) + ")")
@@ -710,8 +838,8 @@ var pie = new d3pie("pieChart", {
           .attr("stroke", "#000000")
           .attr("stroke-width", 1)
           .attr("fill", function(d){
-                      
                       return colorScale(d.value.count)
+                      console.log("Color", colorScale(d.value.count))
                     })
     
           .attr("class", "myrect")
@@ -755,10 +883,11 @@ var pie = new d3pie("pieChart", {
             var subloan = curr.values[j].key;
             var count = curr.values[j].value.count;
             var rate = curr.values[j].value.avgrate;
+            var rateClean = (rate*100).toFixed(3);
             var json = {
               "name": subloan,
               "count": count,
-              "rate": rate.toFixed(5),
+              "rate": rateClean + "%",
             }
             arr.push(json);
           }
