@@ -56,15 +56,22 @@
 
     <body>
       <body style="background-color:lightsteelblue">
-      <h1 style="align:center;"> Lending Club Data Visualization </h1>
-      <div id="info"> TESTING </div>
+      <h1 style="text-align:center;"> Lending Club Data Visualization </h1>
+      <div id="info" style="text-align:center;">
+        <ul>
+          <li> Over 42,500 loans </li>
+          <li> Spans from 2007 - 2011 </li>
+        </ul>
+
+       </div>
+      <br> <div style="align:center;"> <button id="init" type="button"  onclick="enterViz()"> Lets Get Started </button> </div>
+      <hr size="5">
       <div class="container">
             <div id="lineGraph" style="float: left; margin:auto;"></div>
             <div id="barChart" style="float: left; margin: auto;"></div>
             <div id="barChartInfo" style="float: left; margin: auto;"></div>
       </div>
-      <button id="init" type="button"  onclick="enterViz()"> Lets Get Started </button>
-
+      <br>
       <select id="month" class="hide" onchange="wrapper()">
         <option value="All">All</option>
         <option value="Jan">January</option>
@@ -236,27 +243,38 @@
                   //THAT MONTH IS INSUFFICIENT (<5????)
                   //if(rate == 0){ fill it black or something}
                   //else{return colorScale(rate)}
-                  if(rate ==0) return "#fffacd"; //INSUFFICIENT DATA
+                  if(rate == 0) return "#fffacd"; //INSUFFICIENT DATA
+                  if(isNaN(rate)) return "#fffacd";
                   else{
                       return colorScale(rate);
                   }
                 }
                )
                .on("click", function(d) {
-                 var elem = document.getElementById("pieChart");
-                 elem.innerHTML = ' ';
                  var abv = stateIDtoABV(d.id);
-                 createPie(abv,userMonth); //Create the pie chart for state and month
+                 var rate = getRateByStateAndMonth2(abv,userMonth);
+                 if(isNaN(rate)) {
+                   var error = "No loans were found for the selected month!";
+                   var elem = document.getElementById("pieChart");
+                   elem.innerHTML = error;
+                 }
+                 else{
+                   var elem = document.getElementById("pieChart");
+                  elem.innerHTML = ' ';
+                  var abv = stateIDtoABV(d.id);
+                  createPie(abv,userMonth); //Create the pie chart for state and month
+                }
                })
                .on("mouseover", function(d){
                  var abv = stateIDtoABV(d.id);
                  var rate = getRateByStateAndMonth2(abv,userMonth);
                  var rateClean = rate*100;
-                 rateClean = rateClean.toFixed(3)
+                 rateClean = rateClean.toFixed(3) + "%"
+                 if(isNaN(rate)) rateClean = "No Loans!";
                  div.transition()
                  .duration(200)
                  .style("opacity", .9);
-                 div.html(abv + "<br/>" + "Avg Rate:" + rateClean +"%")
+                 div.html(abv + "<br/>" + "Avg Rate:" + rateClean)
                  .style("left", (d3.event.pageX) + "px")
                  .style("top", (d3.event.pageY - 28) + "px");
                })
@@ -738,6 +756,7 @@ var pie = new d3pie("pieChart", {
         .attr("text-anchor", "middle")
         .style("font-size", "16px")
         .style("text-decoration", "bold")
+        .style("text-decoration", "underline")
         .text("Average Rate By Month (2007-2011)");
      }
 
@@ -861,7 +880,14 @@ var pie = new d3pie("pieChart", {
               .attr("text-anchor", "middle")
               .style("font-size", "16px")
               .style("text-decoration", "bold")
+              .style("text-decoration", "underline")
               .text("Breakdown of Loan Type");
+          svg.append("text")
+              .attr("x", (svgBarWidth / 2))
+              .attr("y", svgBarHeight + 30)
+              .attr("text-anchor", "middle")
+              .style("font-size", "12px")
+              .text("Loan Type");
         }
     function getLoanTypeInfo(type){
       var info =  d3.nest()
