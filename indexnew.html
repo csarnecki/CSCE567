@@ -1,0 +1,1030 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>D3 Test</title>
+        <script src="https://d3js.org/topojson.v2.min.js"></script>
+  <script src="d3/d3.js"></script>
+  <script src="d3pie-0.2.1/d3pie/d3pie.min.js"></script>
+ <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.0/jquery.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    </head>
+    <style>
+    .line {
+      fill: none;
+      stroke:black;
+      stroke-width: 5px;
+    }
+    .containerMap {
+      float: left;
+    }
+    .containerChart {
+      float: left;
+      margin-left: auto;
+    }
+    div.tooltip {
+      position: absolute;
+      text-align: center;
+      width: 100px;
+      height: 50px;
+      padding: 2px;
+      font: 14px sans-serif;
+      background: lightsteelblue;
+      border: 0px;
+      border-radius: 8px;
+      pointer-events: none;
+    }
+    div.tooltip_line {
+      position: absolute;
+      text-align: center;
+      width: 30px;
+      height: 20px;
+      padding: 2px;
+      font: 14px sans-serif;
+      background: lightsteelblue;
+      border: 0px;
+      border-radius: 8px;
+      pointer-events: none;
+    }
+    .hide{
+      display:none;
+    }
+    .show{
+      display: block;
+    }
+
+
+    </style>
+
+    <body>
+      <body style="background-color:lightsteelblue">
+      <h1 style="text-align:center;"> Lending Club Data Visualization </h1>
+      <div id="info" style="text-align:center;">
+        <ul>
+          <li> Over 42,500 loans </li>
+          <li> Spans from 2007 - 2011 </li>
+        </ul>
+
+       </div>
+      <br> <div style="text-align:center; margin-left: 27%;"> <button id="init" type="button" class="btn btn-primary col-lg-8 btn-lg" style="align:center;" onclick="enterViz()"> Lets Get Started </button> </div>
+      <hr size="5">
+
+      <div class="container">
+            <div id="lineGraph" style="float: center; margin: 30px;"></div>
+            <div id="barChart" style="float: left; margin: 30px;"></div>
+            <div id="barChartInfo" style="float: left; margin: auto;"></div>
+      </div>
+<hr>
+      <br> <div class="dropdown" >
+      <select id="month"  onchange="wrapper()" class="btn btn-success btn-lg dropdown-toggle hide col-lg-10" align="center" type="button" data-toggle="dropdown" style="float: left; margin: 30px;">
+<span class="caret"></span></button>
+        <option value="All">All</option>
+        <option value="Jan">January</option>
+        <option value="Feb">February</option>
+        <option value="Mar">March</option>
+        <option value="Apr">April</option>
+        <option value="May">May</option>
+        <option value="Jun">June</option>
+        <option value="Jul">July</option>
+        <option value="Aug">August</option>
+        <option value="Sep">September</option>
+        <option value="Oct">October</option>
+        <option value="Nov">November</option>
+        <option value="Dec">December</option>
+      </select> </div>
+
+      <div id="container">
+        <div id="map" class="containerMap"></div>
+        <div id="pieChart" class="containerChart"></div>
+      </div>
+
+
+
+    </body>
+    <script type="text/javascript">
+      var myPaths,loandata;
+      var margin = {top: 30, right: 20, bottom: 20, left: 10},
+      width = 800 - margin.left - margin.right,
+      height = 500 - margin.top - margin.bottom;
+
+      var stateAndMonth, avgRateByMonth, byState;
+      function loadData(){
+
+            d3.json("us-10m.json", function(json)
+              {
+                  myPaths = json;
+              });
+
+             d3.csv("loan_data.csv", function(data) {
+               loandata = data;
+
+
+                stateAndMonth = d3.nest()
+                                  .key(function(d) { return d.addr_state;})
+                                  .key(function(d) { return d.month;})
+                                  .rollup(function(g) { return{
+                                      count: g.length,
+                                      total: d3.sum(g, function(g) { return g.loan_amnt; }),
+                                      avgrate: d3.mean(g, function(g) { return g.int_rate; }),
+                                  }}).entries(this.loandata);
+                 avgRateByMonth_Grade = d3.nest()
+                                          .key(function(d) { return d.month;})
+                                          .key(function(d) { return d.grade;})
+                                          .rollup(function(g) { return{
+                                               total: d3.sum(g, function(g) { return g.loan_amnt; }),
+                                               avgrate: d3.mean(g, function(g) { return g.int_rate; })
+                                           }}).entries(loandata);
+
+                 avgRateByMonth = d3.nest()
+                                    .key(function(d) { return d.month;})
+                                    .rollup(function(g) { return{
+                                                total: d3.sum(g, function(g) { return g.loan_amnt; }),
+                                                avgrate: d3.mean(g, function(g) { return g.int_rate; })
+                                    }}).entries(loandata);
+                 byState = d3.nest()
+                                    .key(function(d) { return d.addr_state;})
+                                    //.key(function(d) { return d.month;})
+                                    .rollup(function(g) { return{
+                                          count: g.length,
+                                          total: d3.sum(g, function(g) { return g.loan_amnt; }),
+                                          avgrate: d3.mean(g, function(g) { return g.int_rate; }),
+                                     }}).entries(this.loandata);
+              //Call the things we want to appear when the page is loaded
+
+       });
+     }
+       function enterViz(){
+         createBarChart();
+         showGraph();
+        // createMap(userMonth, userGrade);
+         document.getElementById('init').classList.add('hide');
+         document.getElementById('month').classList.add('show');
+          createMap("All", "dlkdl");
+       }
+       function wrapper(){
+         var userMonth = document.getElementById("month").value;
+         //var userGrade = document.getElementById("grade").value;
+         var userGrade = ' ';
+         //Remove current map
+         var elem = document.getElementById("map");
+         elem.innerHTML = ' ';
+         createMap(userMonth,userGrade);
+       }
+        function createMap(userMonth,userGrade){
+          //var userMonth = document.getElementById("month").value;
+          //var userGrade = document.getElementById("grade").value;
+          //Grab the appropriate data
+          console.log(userMonth);
+          if(userMonth == "All"){
+            var max = 0;
+            var min = 1;
+            for(i=0;i<this.byState.length;i++){
+              var count = this.byState[i].value.count;
+              var rate = this.byState[i].value.avgrate;
+
+              if(count > 10) {
+                if(rate>max) max = rate;
+                if(rate<min) min = rate;
+             }
+            }
+
+          }
+
+          else{
+           var max = 0;
+           var min = 1;
+           for(i=0;i<this.stateAndMonth.length;i++){
+              var currState = this.stateAndMonth[i].values;
+              for(j=0;j<currState.length;j++){
+                  var selection = currState[j];
+                  var currMonth = selection.key;
+                  if(currMonth == userMonth){
+                     var rate = selection.value.avgrate;
+                     var count = selection.value.count;
+                     if(count > 10) {
+                       if(rate>max) max = rate;
+                       if(rate<min) min = rate;
+                    }
+                  }
+              }
+            }
+          }
+          //console.log("MIN MAX", min,max);
+
+          var svg = d3.select("#map")
+                .append("svg")
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom)
+                .append("g")
+                .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+          var projection = d3.geoAlbersUsa()
+                .translate([width/2, height/2])
+                .scale([900]);
+
+           var path = d3.geoPath()
+                .projection(projection);
+
+           var div = d3.select("body").append("div")
+     					    .attr("class", "tooltip")
+     					    .style("opacity", 0);
+
+           colorScale = d3.scaleLinear()
+                          .domain([min,max])
+                          .range(["#00ff64", "#000000"]);//"#009933"]);
+
+
+           var states = svg.selectAll("path")
+               //.classed("containerMap", true)
+               .data(topojson.feature(myPaths, myPaths.objects.states).features)
+               .enter()
+               .append("path")
+               .attr("d", path)
+               .style("stroke", "#000000")
+               .style("stroke-width", "1")
+               .attr("fill",  function(d) {
+                  var abv = stateIDtoABV(d.id);
+                  var rate = getRateByStateAndMonth2(abv,userMonth);
+
+                  //NEED TO ADD A CHECK MAYBE RETURN RATE=0 IF THE # LOANS FOR
+                  //THAT MONTH IS INSUFFICIENT (<5????)
+                  //if(rate == 0){ fill it black or something}
+                  //else{return colorScale(rate)}
+                  if(rate == 0) return "#fffacd"; //INSUFFICIENT DATA
+                  if(isNaN(rate)) return "#fffacd";
+                  else{
+                      return colorScale(rate);
+                  }
+                }
+               )
+               .on("click", function(d) {
+                 var abv = stateIDtoABV(d.id);
+                 var rate = getRateByStateAndMonth2(abv,userMonth);
+                 if(isNaN(rate)) {
+                   var error = "No loans were found for the selected month!";
+                   var elem = document.getElementById("pieChart");
+                   elem.innerHTML = error;
+                 }
+                 else{
+                   var elem = document.getElementById("pieChart");
+                  elem.innerHTML = ' ';
+                  var abv = stateIDtoABV(d.id);
+                  createPie(abv,userMonth); //Create the pie chart for state and month
+                }
+               })
+               .on("mouseover", function(d){
+                 var abv = stateIDtoABV(d.id);
+                 var rate = getRateByStateAndMonth2(abv,userMonth);
+                 var rateClean = rate*100;
+                 rateClean = rateClean.toFixed(3) + "%"
+                 if(isNaN(rate)) rateClean = "No Loans!";
+                 div.transition()
+                 .duration(200)
+                 .style("opacity", .9);
+                 div.html(abv + "<br/>" + "Avg Rate:" + rateClean)
+                 .style("left", (d3.event.pageX) + "px")
+                 .style("top", (d3.event.pageY - 28) + "px");
+               })
+               .on("mouseout", function(d) {
+                 div.transition()
+                 .duration(500)
+                 .style("opacity", 0);
+               });
+
+
+               svg.append("text")
+                   .attr("x", (width / 2))
+                   .attr("y", 0 - (margin.top/2))
+                   .attr("text-anchor", "middle")
+                   .style("font-size", "22px")
+                   .style("text-decoration", "bold")
+                   .text("Loan Data for: " + userMonth);
+     }
+
+     function showGraph(){
+       createGraph(this.avgRateByMonth);
+     }
+
+     function removePie(){
+       var elem = document.getElementById("pieChart");
+       elem.innerHTML = ' ';
+     }
+
+     function getRateByStateAndMonth2(abv,userMonth){
+      if(userMonth == "All"){
+        var data = this.byState;
+        for(i=0;i<data.length;i++){
+          var curr = data[i];
+          var currAbv = curr.key;
+          if(currAbv == abv){
+            var rate = curr.value.avgrate;
+            var count = curr.value.count;
+            if(count<10) return 0;
+            else{
+              break;
+
+            }
+          }
+        }
+      }
+      else{
+      var data = this.stateAndMonth;
+      console.log(data);
+        for(i=0;i<data.length;i++){
+            var curr = data[i];
+            var currAbv = curr.key;
+            if(currAbv == abv){ //Found the correct state
+               for(j=0;j<curr.values.length;j++){
+                  var curr2 = curr.values[j];
+                  var currMon = curr2.key;
+                  if(currMon == userMonth){ //Found month too
+                    if(curr2.value.count < 10) return 0;
+                    else{
+                      var rate = curr2.value.avgrate; //Save array
+                      break;
+                    }
+                  }
+                }
+            }
+          }
+        }
+      return rate;
+     }
+
+     function createPie(abv, userMonth){
+
+       if(userMonth == "All"){
+         console.log("All in pie");
+         //Need to get the purposes for abv and month
+                categories = d3.nest()
+                               .key(function(d) { return d.addr_state;})
+                               //.key(function(d) { return d.month;})
+                               .key(function(d) { return d.purpose;})
+                               //.key(function(d) {return d.grade;})
+                                .rollup(function(g) { return{
+                                   count: g.length,
+                                   total: d3.sum(g, function(g) { return g.loan_amnt; }),
+                                   avgrate: d3.mean(g, function(g) { return g.int_rate; }),
+                         }}).entries(this.loandata);
+
+               console.log(categories);
+
+
+               for(i=0;i<categories.length;i++){
+                  var curr = categories[i];
+                  if(curr.key == abv){
+                    var data = curr.values;
+                    break;
+                  }
+               }
+       }
+
+       else{
+
+       //Need to get the purposes for abv and month
+       categories = d3.nest()
+                      .key(function(d) { return d.addr_state;})
+                      .key(function(d) { return d.month;})
+                      .key(function(d) { return d.purpose;})
+                      //.key(function(d) {return d.grade;})
+                       .rollup(function(g) { return{
+                          count: g.length,
+                          total: d3.sum(g, function(g) { return g.loan_amnt; }),
+                          avgrate: d3.mean(g, function(g) { return g.int_rate; }),
+                }}).entries(this.loandata);
+
+      for(i=0;i<categories.length;i++){
+        var curr = categories[i];
+        var currAbv = curr.key;
+        if(currAbv == abv){ //Found the correct states
+          for(j=0;j<categories[i].values.length;j++){
+            var curr2 = categories[i].values[j];
+            var currMon = curr2.key;
+            if(currMon == userMonth){ //Found month too
+              var data = curr2.values; //Save array
+              break;
+            }
+          }
+        }
+      }
+    }
+       //console.log("pie time", data);
+       //Need to create an array of objects for each "label", "value","color"
+       var arr = [];
+       var count = 0;
+       for(i=0;i<data.length;i++){
+         var curr = data[i];
+         var json = {
+           "label": data[i].key,
+           "value": data[i].value.count
+         }
+         var count = count + data[i].value.count;
+         arr.push(json);
+       }
+
+var colorScale = d3.scaleLinear()
+    .domain([])
+    .range(["#000000", "#00ff64"]);
+
+var pie = new d3pie("pieChart", {
+	"header": {
+		"title": {
+			"text":  "State: " + abv + " Month: " + userMonth,
+			"fontSize": 20,
+			"font": "open sans"
+		},
+		"subtitle": {
+      "text": "# of Loans: " + count,
+			"color": "#999999",
+			"fontSize": 12,
+			"font": "open sans"
+		},
+		"titleSubtitlePadding": 9
+	},
+	"footer": {
+		"color": "#999999",
+		"fontSize": 10,
+		"font": "open sans",
+		"location": "bottom-left"
+	},
+	"size": {
+		"canvasHeight": 400,
+		"canvasWidth": 500,
+		"pieOuterRadius": "87%"
+	},
+	"data": {
+		"sortOrder": "value-desc",
+		"smallSegmentGrouping": {
+			"enabled": true
+		},
+		"content": arr,
+	},
+
+	"labels": {
+		"outer": {
+			"pieDistance": 20
+		},
+		"inner": {
+			"hideWhenLessThanPercentage": 3
+		},
+		"mainLabel": {
+			"fontSize": 11
+		},
+		"percentage": {
+			"color": "#ffffff",
+			"decimalPlaces": 0
+		},
+		"value": {
+			"color": "#adadad",
+			"fontSize": 11
+		},
+		"lines": {
+			"enabled": true
+		},
+		"truncation": {
+			"enabled": true
+		}
+	},
+	"effects": {
+		"pullOutSegmentOnClick": {
+			"effect": "none",
+			"speed": 400,
+			"size": 8
+		}
+	},
+	"misc": {
+		"gradient": {
+			"enabled": true,
+			"percentage": 100
+		}
+	},
+	"callbacks": {}
+});
+
+     }
+     function createGraph(d){
+       // Set the dimensions of the canvas / graph
+       var marginGraph = {top: 30, right: 10, bottom: 30, left: 50};
+       var widthGraph = 500 - marginGraph.left - marginGraph.right;
+       var heightGraph = 300 - marginGraph.top - marginGraph.bottom;
+       myData = d;
+       // Parse the date / time
+       //var parseDate = d3.time.format("%d-%b-%y").parse;
+
+       // Set the ranges
+       //var x = d3.saleBand().range([0, width]);
+       //var y = d3.scaleLinear().range([height, 0]);
+       var max = 0;
+       for(i=0;i<this.avgRateByMonth.length;i++){
+           var tmp = this.avgRateByMonth[i];
+           var avg = tmp.value.avgrate;
+           if(avg>max){ max = avg; }
+         }
+         console.log(max);
+
+       var lineA = transform(this.avgRateByMonth_Grade, "A");
+       var lineB = transform(this.avgRateByMonth_Grade, "B");
+       var lineC = transform(this.avgRateByMonth_Grade, "C");
+       var lineD = transform(this.avgRateByMonth_Grade, "D");
+       var lineE = transform(this.avgRateByMonth_Grade, "E");
+       var lineF = transform(this.avgRateByMonth_Grade, "F");
+       var lineG = transform(this.avgRateByMonth_Grade, "G");
+       var xScale = d3.scaleBand()
+                       .domain(myData.map( function(d)
+                                 { //return parseInt(d.key)
+                                   return d.key
+                                 }))
+                       .range([widthGraph, 0])
+                       .paddingInner(0.05);
+
+       var yScale = d3.scaleLinear()
+                             .domain([ 0, d3.max(lineG, function(lineG) { return lineG.value; })])
+                             //.domain([d3.max(myData, function(d) { return d.value; }),0])
+                             .range([heightGraph,0]);
+       // Define the axes
+
+       var xAxis = d3.axisBottom()
+       .scale(xScale);
+
+       var yAxis = d3.axisLeft()
+        .scale(yScale);
+
+      var div = d3.select("body").append("div")
+     					    .attr("class", "tooltip_line")
+     					    .style("opacity", 0);
+      //Lines
+      var valueline = d3.line()
+             .x(function(d) { return xScale(d.key); })
+             .y(function(d) { return yScale(d.value.avgrate); });
+       var valuelineA = d3.line()
+            .x(function(lineA) { return xScale(lineA.key); })
+            .y(function(lineA) { return yScale(lineA.value); });
+      var valuelineB = d3.line()
+            .x(function(lineB) { return xScale(lineB.key); })
+            .y(function(lineB) { return yScale(lineB.value); });
+      var valuelineC = d3.line()
+            .x(function(lineC) { return xScale(lineC.key); })
+            .y(function(lineC) { return yScale(lineC.value); });
+      var valuelineD = d3.line()
+            .x(function(lineD) { return xScale(lineD.key); })
+            .y(function(lineD) { return yScale(lineD.value); });
+      var valuelineE = d3.line()
+               .x(function(lineE) { return xScale(lineE.key); })
+              .y(function(lineE) { return yScale(lineE.value); });
+      var valuelineF = d3.line()
+              .x(function(lineF) { return xScale(lineF.key); })
+              .y(function(lineF) { return yScale(lineF.value); });
+      var valuelineG = d3.line()
+              .x(function(lineG) { return xScale(lineG.key); })
+              .y(function(lineG) { return yScale(lineG.value); });
+      // Adds the svg canvas
+       var svg = d3.select("#lineGraph")
+            .append("svg")
+            .attr("width", widthGraph + marginGraph.left + marginGraph.right)
+            .attr("height", heightGraph + marginGraph.top + marginGraph.bottom)
+            .append("g")
+            .attr("transform",
+              "translate(" + marginGraph.left + "," + marginGraph.top + ")");
+            // Scale the range of the data
+    //xScale.domain(d3.extent(this.avgRateByMonth, function(d) { return d.key; }));
+    //  yScale.domain([0, max]);
+    colorScale = d3.scaleLinear()
+            .domain([0,0.2])
+            .range(["#000000", "#ff0000"]);//"#009933"]);
+    // Add the valueline path.
+    svg.append("path")
+        .attr("class", "line")
+        .attr("d", valueline(this.avgRateByMonth))
+        .style("stroke", "white")
+        .style("stroke-width", "5pt")
+        .attr("data-legend","all")
+        .on("mouseover", function(d){
+                 div.transition()
+                 .duration(200)
+                 .style("opacity", .9);
+                 div.html("Avg")
+                 .style("left", (d3.event.pageX) + "px")
+                 .style("top", (d3.event.pageY - 15) + "px");
+               })
+               .on("mouseout", function(d) {
+                 div.transition()
+                 .duration(500)
+                 .style("opacity", 0);
+               });
+
+    svg.append("path")
+            .attr("class", "line")
+            .attr("d", valuelineA(lineA))
+            .style("stroke", "#00d252")
+            .attr("data-legend","A")
+            .on("mouseover", function(d){
+                 div.transition()
+                 .duration(200)
+                 .style("opacity", .9);
+                 div.html("A")
+                 .style("left", (d3.event.pageX - 15) + "px")
+                 .style("top", (d3.event.pageY - 15) + "px");
+               })
+               .on("mouseout", function(d) {
+                 div.transition()
+                 .duration(500)
+                 .style("opacity", 0);
+               });
+    svg.append("path")
+            .attr("class", "line")
+            .attr("d", valuelineB(lineB))
+            .style("stroke", "#00ff64")
+            .attr("data-legend","B")
+            .on("mouseover", function(d){
+                 div.transition()
+                 .duration(200)
+                 .style("opacity", .9);
+                 div.html("B")
+                 .style("left", (d3.event.pageX - 15) + "px")
+                 .style("top", (d3.event.pageY - 15) + "px");
+               })
+               .on("mouseout", function(d) {
+                 div.transition()
+                 .duration(500)
+                 .style("opacity", 0);
+               });
+    svg.append("path")
+             .attr("class", "line")
+             .attr("d", valuelineC(lineC))
+             .style("stroke", "#00b447")
+             .attr("data-legend","C")
+             .on("mouseover", function(d){
+                 div.transition()
+                 .duration(200)
+                 .style("opacity", .9);
+                 div.html("C")
+                 .style("left", (d3.event.pageX - 15) + "px")
+                 .style("top", (d3.event.pageY - 15) + "px");
+               })
+               .on("mouseout", function(d) {
+                 div.transition()
+                 .duration(500)
+                 .style("opacity", 0);
+               });
+     svg.append("path")
+              .attr("class", "line")
+              .attr("d", valuelineD(lineD))
+              .style("stroke", "#007c31")
+              .attr("data-legend","D")
+              .on("mouseover", function(d){
+                 div.transition()
+                 .duration(200)
+                 .style("opacity", .9);
+                 div.html("D")
+                 .style("left", (d3.event.pageX - 15) + "px")
+                 .style("top", (d3.event.pageY - 15) + "px");
+               })
+               .on("mouseout", function(d) {
+                 div.transition()
+                 .duration(500)
+                 .style("opacity", 0);
+               });
+     svg.append("path")
+              .attr("class", "line")
+              .attr("d", valuelineE(lineE))
+              .style("stroke", "#00461b")
+              .attr("data-legend","E")
+              .on("mouseover", function(d){
+                 div.transition()
+                 .duration(200)
+                 .style("opacity", .9);
+                 div.html("E")
+                 .style("left", (d3.event.pageX - 15) + "px")
+                 .style("top", (d3.event.pageY - 15) + "px");
+               })
+               .on("mouseout", function(d) {
+                 div.transition()
+                 .duration(500)
+                 .style("opacity", 0);
+               });
+     svg.append("path")
+              .attr("class", "line")
+              .attr("d", valuelineF(lineF))
+              .style("stroke", "#001b0b")
+              .attr("data-legend","F")
+              .on("mouseover", function(d){
+                 div.transition()
+                 .duration(200)
+                 .style("opacity", .9);
+                 div.html("F")
+                 .style("left", (d3.event.pageX - 15) + "px")
+                 .style("top", (d3.event.pageY - 15) + "px");
+               })
+               .on("mouseout", function(d) {
+                 div.transition()
+                 .duration(500)
+                 .style("opacity", 0);
+               });
+     svg.append("path")
+              .attr("class", "line")
+              .attr("d", valuelineG(lineG))
+              .style("stroke", "#000b04")
+              .attr("data-legend","G")
+              .on("mouseover", function(d){
+                 div.transition()
+                 .duration(200)
+                 .style("opacity", .9);
+                 div.html("G")
+                 .style("left", (d3.event.pageX -15) + "px")
+                 .style("top", (d3.event.pageY -15) + "px");
+               })
+               .on("mouseout", function(d) {
+                 div.transition()
+                 .duration(500)
+                 .style("opacity", 0);
+               });
+
+    // Add the X Axi
+    svg.append("g")
+        .attr("class", "x axis")
+        .attr("transform", "translate(0," + heightGraph + ")")
+        .call(xAxis);
+
+    // Add the Y Axis
+    svg.append("g")
+        .attr("class", "y axis")
+        .call(yAxis);
+    //X-Axis Label
+    svg.append("text")
+        .attr("x", (widthGraph / 2))
+        .attr("y", heightGraph + marginGraph.bottom)
+        .attr("text-anchor", "middle")
+        .style("font-size", "16px")
+        .text("Month");
+
+    svg.append("text")
+        .attr("x", (widthGraph / 2))
+        .attr("y", 0 - (marginGraph.top/2))
+        .attr("text-anchor", "middle")
+        .style("font-size", "22px")
+        .style("text-decoration", "bold")
+        .style("text-decoration", "underline")
+	
+        .text("Average Rate By Month (2007-2011)");
+     }
+
+     function transform(d,g){
+       console.log(g);
+       //console.log(d);
+       var arr = [];
+       for(i=0;i<d.length;i++){
+         data = d[i];
+         var month = data.key;
+         var grade = g;
+         var valuesArr = d[i].values;
+         for(j=0;j<valuesArr.length;j++){
+           var tmpgrade = valuesArr[j].key;
+           if(tmpgrade == grade){
+             console.log("found");
+             var json = {
+               "key" : month,
+               "value": valuesArr[j].value.avgrate,
+             }
+             break;
+           }
+         }
+         arr.push(json);
+       }
+       console.log(arr);
+       return arr;
+     }
+     function createBarChart(){
+       var svgBarWidth = 700 - margin.left - margin.right;
+       var svgBarHeight = 300 - margin.top - margin.bottom;
+       var marginChart = {top: 30, right: 10 , bottom: 50, left: 40};
+       var byLoanType =  d3.nest()
+                           .key(function(d) { return d.grade;})
+                           //.key(function(d) { return d.sub_grade;})
+                           .rollup(function(g) { return{
+                              count: g.length,
+                              avgrate: d3.mean(g, function(g) { return g.int_rate; }),
+                           }}).entries(this.loandata);
+        console.log("By Loan Type", byLoanType);
+
+        myData = byLoanType;
+        myData.sort(function(a, b) {
+						 return d3.descending(a.value.count, b.value.count);
+					 });
+
+        var svg = d3.select("#barChart")
+                    .append("svg")
+                    //.classed("containerChart", true)
+                    .attr("id", "chart")
+                    .attr("width", svgBarWidth + marginChart.left + marginChart.right)
+                    .attr("height", svgBarHeight + marginChart.top + marginChart.bottom)
+                    .append("g")
+                    .attr("transform", "translate(" + marginChart.left + "," + marginChart.top + ")");
+                    // generate scales
+         var xScale = d3.scaleBand()
+                        .domain(myData.map( function(d)
+                            { return d.key;
+                          }))
+                         .range([0, svgBarWidth])
+                         .paddingInner(0.05);
+
+        var yScale = d3.scaleLinear()
+                       .domain([0, d3.max(myData, function(d) { return d.value.count; })])
+                       .range([svgBarHeight, 0]);
+                       //NEW LINE
+        colorScale = d3.scaleLinear()
+                          .domain([0, d3.max(myData, function(d) { return d.value.count; })])
+                          .range(["#000000", "#00ff64"]);//"#009933"]);
+         // generate axis
+        svg.append("g")
+           .attr("transform", "translate(0," + (svgBarHeight) + ")")
+           .call(d3.axisBottom(xScale));
+
+        svg.append("g")
+           .call(d3.axisLeft(yScale));
+
+        // generate bars
+        svg.selectAll("rect")
+           .data(myData)
+           .enter()
+           .append("rect")
+           .attr("x", function(d, i)
+           {
+              return xScale(d.key);
+           })
+          .attr("y", function(d, i)
+           {
+              return yScale(d.value.count);
+           })
+          .attr("height", function(d, i)
+          {
+              return svgBarHeight-yScale(d.value.count);
+          })
+          .attr("width", function(d, i)
+          {
+              return xScale.bandwidth();
+          })
+          .attr("stroke", "#000000")
+          .attr("stroke-width", 1)
+          .attr("fill", function(d){
+                      return colorScale(d.value.count)
+                      console.log("Color", colorScale(d.value.count))
+                    })
+
+          .attr("class", "myrect")
+          .on("mouseover", function(d){
+            getLoanTypeInfo(d.key);
+
+          })
+          .on("mouseout", function(d){
+            console.log(this);
+          //  d3.select("#chartInfo").remove();
+            var curr = document.getElementById("barChartInfo");
+            curr.innerHTML = '';
+          })
+
+          svg.append("text")
+              .attr("x", (svgBarWidth / 2))
+              .attr("y", 0 - (marginChart.top/2))
+              .attr("text-anchor", "middle")
+              .style("font-size", "22px")
+              .style("text-decoration", "bold")
+              .style("text-decoration", "underline")
+              .text("Breakdown of Loan Type");
+          svg.append("text")
+              .attr("x", (svgBarWidth / 2))
+              .attr("y", svgBarHeight + 30)
+              .attr("text-anchor", "middle")
+              .style("font-size", "18px")
+              .text("Loan Type");
+        }
+    function getLoanTypeInfo(type){
+      var info =  d3.nest()
+                          .key(function(d) { return d.grade;})
+                          .key(function(d) { return d.sub_grade;})
+                          .rollup(function(g) { return{
+                             count: g.length,
+                             min: d3.min(g, function(g) { return g.int_rate; }),
+                             max: d3.max(g, function(g) { return g.int_rate; }),
+                             avgDTI: d3.mean(g, function(g) { return g.dti; }),
+                             avgrate: d3.mean(g, function(g) { return g.int_rate; }),
+                           }}).entries(this.loandata);
+      console.log(info);
+      var arr = [];
+
+      for(i=0;i<info.length;i++){
+        var curr = info[i];
+        if(curr.key==type){//Found the loan type
+          for(j=0;j<curr.values.length;j++){
+            var subloan = curr.values[j].key;
+            var count = curr.values[j].value.count;
+            var rate = curr.values[j].value.avgrate;
+            var rateClean = (rate*100).toFixed(3);
+            var json = {
+              "name": subloan,
+              "count": count,
+              "rate": rateClean + "%",
+            }
+            arr.push(json);
+          }
+          break;
+        }
+      }
+      var marginInfo = {top: 30, right: 10, bottom: 10, left: 10};
+      var svgInfoWidth = 100 - marginInfo.left - marginInfo.right;
+      var svgInfoHeight = 300 - marginInfo.top - marginInfo.bottom;
+
+      var svg = d3.select("#barChartInfo")
+                  .append("svg")
+                  //.classed("containerChart", true)
+                  .attr("id", "chartInfo")
+                  .attr("width", svgInfoWidth + marginInfo.left + marginInfo.right)
+                  .attr("height", svgInfoHeight + marginInfo.top + marginInfo.bottom)
+                  .append("g")
+                  .attr("transform", "translate(" + marginInfo.left + "," + marginInfo.top + ")");
+       for(i=0; i<arr.length;i++){
+            var curr = arr[i];
+            var location = 50*i;
+
+            svg.append("text")
+                      .attr("x", 0)
+                      .attr("y", location)
+                      .attr("text-anchor", "left")
+                      .style("font-size", "16px")
+                      .style("text-decoration", "bold")
+                      .text(curr.name);
+            svg.append("text")
+                      .attr("x", 0)
+                      .attr("y", location+15)
+                      .attr("text-anchor", "left")
+                      .style("font-size", "16px")
+                      .text("Rate: " + curr.rate);
+            svg.append("text")
+                      .attr("x", 0)
+                      .attr("y", location+30)
+                      .attr("text-anchor", "left")
+                      .style("font-size", "16px")
+                      .text("Count: " + curr.count);
+      }
+    }
+
+     function stateIDtoABV(id){
+       if(id == 2) return "AK";
+       if(id == 1) return "AL"
+       if(id == 5) return "AR";
+       if(id == 4) return "AZ";
+       if(id == 6) return "CA";
+       if(id == 8) return "CO";
+       if(id == 9) return "CT";
+       if(id == 10)return "DE";
+       if(id == 12)return "FL";
+       if(id == 13)return "GA";
+       if(id == 15)return "HI";
+       if(id == 19)return "IA";
+       if(id == 16)return "ID";
+       if(id == 17)return "IL";
+       if(id == 18)return "IN";
+       if(id == 20)return "KS";
+       if(id == 21)return "KY";
+       if(id == 22)return "LA";
+       if(id == 25)return "MA";
+       if(id == 24) return "MD";
+       if(id == 23) return "ME";
+       if(id == 26) return "MI";
+       if(id == 27) return "MN";
+       if(id == 29) return "MO";
+       if(id == 28) return "MS";
+       if(id == 30) return "MT";
+       if(id == 37) return "NC";
+       if(id == 38) return "ND";
+       if(id == 31) return "NE";
+       if(id == 33) return "NH";
+       if(id == 34) return "NJ";
+       if(id == 35) return "NM";
+       if(id == 32) return "NV";
+       if(id == 36) return "NY";
+       if(id == 39) return "OH";
+       if(id == 40) return "OK";
+       if(id == 41) return "OR";
+       if(id == 42) return "PA";
+       if(id == 44) return "RI";
+       if(id == 45) return "SC";
+       if(id == 46) return "SD";
+       if(id == 47) return "TN";
+       if(id == 48) return "TX";
+       if(id == 49) return "UT";
+       if(id == 51) return "VA";
+       if(id == 50) return "VT";
+       if(id == 53) return "WA";
+       if(id == 55) return "WI";
+       if(id == 54) return "WV";
+       if(id == 56) return "WY";
+
+     }
+
+
+
+
+    window.onload = loadData;
+
+        </script>
+</html>
