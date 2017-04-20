@@ -6,6 +6,9 @@
         <script src="https://d3js.org/topojson.v2.min.js"></script>
   <script src="d3/d3.js"></script>
   <script src="d3pie-0.2.1/d3pie/d3pie.min.js"></script>
+ <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.0/jquery.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
     </head>
     <style>
     .line {
@@ -64,15 +67,18 @@
         </ul>
 
        </div>
-      <br> <div style="align:center;"> <button id="init" type="button"  onclick="enterViz()"> Lets Get Started </button> </div>
+      <br> <div style="text-align:center; margin-left: 27%;"> <button id="init" type="button" class="btn btn-primary col-lg-8 btn-lg" style="align:center;" onclick="enterViz()"> Lets Get Started </button> </div>
       <hr size="5">
+
       <div class="container">
-            <div id="lineGraph" style="float: left; margin:auto;"></div>
-            <div id="barChart" style="float: left; margin: auto;"></div>
+            <div id="lineGraph" style="float: left; margin: 30px;"></div>
+            <div id="barChart" style="float: left; margin: 30px;"></div>
             <div id="barChartInfo" style="float: left; margin: auto;"></div>
       </div>
-      <br>
-      <select id="month" class="hide" onchange="wrapper()">
+<hr>
+      <br> <div class="dropdown" >
+      <select id="month"  onchange="wrapper()" class="btn btn-success btn-lg dropdown-toggle hide col-lg-10" align="center" type="button" data-toggle="dropdown" style="float: left; margin: 30px;">
+<span class="caret"></span></button>
         <option value="All">All</option>
         <option value="Jan">January</option>
         <option value="Feb">February</option>
@@ -86,7 +92,8 @@
         <option value="Oct">October</option>
         <option value="Nov">November</option>
         <option value="Dec">December</option>
-      </select>
+      </select> </div>
+
       <div id="container">
         <div id="map" class="containerMap"></div>
         <div id="pieChart" class="containerChart"></div>
@@ -289,7 +296,7 @@
                    .attr("x", (width / 2))
                    .attr("y", 0 - (margin.top/2))
                    .attr("text-anchor", "middle")
-                   .style("font-size", "18px")
+                   .style("font-size", "22px")
                    .style("text-decoration", "bold")
                    .text("Loan Data for: " + userMonth);
      }
@@ -497,9 +504,9 @@ var pie = new d3pie("pieChart", {
      }
      function createGraph(d){
        // Set the dimensions of the canvas / graph
-       var marginGraph = {top: 30, right: 10, bottom: 30, left: 50};
-       var widthGraph = 500 - marginGraph.left - marginGraph.right;
-       var heightGraph = 300 - marginGraph.top - marginGraph.bottom;
+       var marginGraph = {top: 50, right: 10, bottom: 30, left: 10};
+       var widthGraph = 450 - marginGraph.left - marginGraph.right;
+       var heightGraph = 400 - marginGraph.top - marginGraph.bottom;
        myData = d;
        // Parse the date / time
        //var parseDate = d3.time.format("%d-%b-%y").parse;
@@ -747,16 +754,17 @@ var pie = new d3pie("pieChart", {
         .attr("x", (widthGraph / 2))
         .attr("y", heightGraph + marginGraph.bottom)
         .attr("text-anchor", "middle")
-        .style("font-size", "12px")
+        .style("font-size", "16px")
         .text("Month");
 
     svg.append("text")
         .attr("x", (widthGraph / 2))
         .attr("y", 0 - (marginGraph.top/2))
         .attr("text-anchor", "middle")
-        .style("font-size", "16px")
+        .style("font-size", "22px")
         .style("text-decoration", "bold")
         .style("text-decoration", "underline")
+	
         .text("Average Rate By Month (2007-2011)");
      }
 
@@ -786,9 +794,9 @@ var pie = new d3pie("pieChart", {
        return arr;
      }
      function createBarChart(){
-       var svgBarWidth = 700 - margin.left - margin.right;
-       var svgBarHeight = 300 - margin.top - margin.bottom;
-       var marginChart = {top: 30, right: 10 , bottom: 50, left: 40};
+       var svgBarWidth = 475 - margin.left - margin.right;
+       var svgBarHeight = 375 - margin.top - margin.bottom;
+       var marginChart = {top: 50, right: 10 , bottom: 50, left: 10};
        var byLoanType =  d3.nest()
                            .key(function(d) { return d.grade;})
                            //.key(function(d) { return d.sub_grade;})
@@ -878,7 +886,7 @@ var pie = new d3pie("pieChart", {
               .attr("x", (svgBarWidth / 2))
               .attr("y", 0 - (marginChart.top/2))
               .attr("text-anchor", "middle")
-              .style("font-size", "16px")
+              .style("font-size", "22px")
               .style("text-decoration", "bold")
               .style("text-decoration", "underline")
               .text("Breakdown of Loan Type");
@@ -886,7 +894,7 @@ var pie = new d3pie("pieChart", {
               .attr("x", (svgBarWidth / 2))
               .attr("y", svgBarHeight + 30)
               .attr("text-anchor", "middle")
-              .style("font-size", "12px")
+              .style("font-size", "18px")
               .text("Loan Type");
         }
     function getLoanTypeInfo(type){
@@ -948,13 +956,13 @@ var pie = new d3pie("pieChart", {
                       .attr("x", 0)
                       .attr("y", location+15)
                       .attr("text-anchor", "left")
-                      .style("font-size", "12px")
+                      .style("font-size", "16px")
                       .text("Rate: " + curr.rate);
             svg.append("text")
                       .attr("x", 0)
                       .attr("y", location+30)
                       .attr("text-anchor", "left")
-                      .style("font-size", "12px")
+                      .style("font-size", "16px")
                       .text("Count: " + curr.count);
       }
     }
