@@ -71,7 +71,7 @@
       <hr size="5">
 
       <div class="container">
-            <div id="lineGraph" style="float: center; margin: 30px;"></div>
+            <div id="lineGraph" style="float: left; margin: 30px;"></div>
             <div id="barChart" style="float: left; margin: 30px;"></div>
             <div id="barChartInfo" style="float: left; margin: auto;"></div>
       </div>
@@ -504,9 +504,9 @@ var pie = new d3pie("pieChart", {
      }
      function createGraph(d){
        // Set the dimensions of the canvas / graph
-       var marginGraph = {top: 30, right: 10, bottom: 30, left: 50};
-       var widthGraph = 500 - marginGraph.left - marginGraph.right;
-       var heightGraph = 300 - marginGraph.top - marginGraph.bottom;
+       var marginGraph = {top: 50, right: 10, bottom: 30, left: 10};
+       var widthGraph = 450 - marginGraph.left - marginGraph.right;
+       var heightGraph = 400 - marginGraph.top - marginGraph.bottom;
        myData = d;
        // Parse the date / time
        //var parseDate = d3.time.format("%d-%b-%y").parse;
@@ -794,9 +794,9 @@ var pie = new d3pie("pieChart", {
        return arr;
      }
      function createBarChart(){
-       var svgBarWidth = 700 - margin.left - margin.right;
-       var svgBarHeight = 300 - margin.top - margin.bottom;
-       var marginChart = {top: 30, right: 10 , bottom: 50, left: 40};
+       var svgBarWidth = 475 - margin.left - margin.right;
+       var svgBarHeight = 375 - margin.top - margin.bottom;
+       var marginChart = {top: 50, right: 10 , bottom: 50, left: 10};
        var byLoanType =  d3.nest()
                            .key(function(d) { return d.grade;})
                            //.key(function(d) { return d.sub_grade;})
